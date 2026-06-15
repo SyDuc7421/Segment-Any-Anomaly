@@ -35,24 +35,6 @@ def denormalization(x):
     return x
 
 
-def stratified_subset(dataset_inst, n):
-    """Return indices for a stratified subsample keeping good/defect ratio."""
-    labels = dataset_inst.labels
-    good_idx = [i for i, l in enumerate(labels) if l == 0]
-    defect_idx = [i for i, l in enumerate(labels) if l == 1]
-
-    ratio = len(good_idx) / len(labels)
-    n_good = max(1, round(n * ratio))
-    n_defect = max(1, n - n_good)
-
-    import random
-    rng = random.Random(42)
-    sampled_good = rng.sample(good_idx, min(n_good, len(good_idx)))
-    sampled_defect = rng.sample(defect_idx, min(n_defect, len(defect_idx)))
-
-    return sorted(sampled_good + sampled_defect)
-
-
 def get_dataloader_from_args(phase, **kwargs):
     dataset_inst = SAADataset(
         load_function=load_function_dict[kwargs['dataset']],
@@ -61,12 +43,6 @@ def get_dataloader_from_args(phase, **kwargs):
         k_shot=kwargs['k_shot'],
         experiment_indx=kwargs['experiment_indx']
     )
-
-    max_samples = kwargs.get('max_samples')
-    if phase == 'test' and max_samples is not None:
-        from torch.utils.data import Subset
-        indices = stratified_subset(dataset_inst, max_samples)
-        dataset_inst = Subset(dataset_inst, indices)
 
     if phase == 'train':
         data_loader = DataLoader(dataset_inst, batch_size=kwargs['batch_size'], shuffle=True,
