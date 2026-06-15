@@ -91,7 +91,7 @@ class Model(torch.nn.Module):
         args = SLConfig.fromfile(model_config_path)
         args.device = device
         model = build_model(args)
-        checkpoint = torch.load(model_checkpoint_path, map_location="cpu")
+        checkpoint = torch.load(model_checkpoint_path, map_location="cpu", weights_only=False)
         model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
         _ = model.eval()
         model = model.to(device)

@@ -1,10 +1,10 @@
-torch
-torchvision
-transformers
+torch>=1.10.0
+torchvision>=0.11.0
+transformers>=4.24.0,<4.36.0
 addict
 yapf
 timm
-numpy
+numpy<2.0.0
 opencv-python
-supervision==0.3.2
+supervision>=0.6.0,<0.21.0
 pycocotools
