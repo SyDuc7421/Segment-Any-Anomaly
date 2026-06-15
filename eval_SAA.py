@@ -198,6 +198,8 @@ def get_args():
     parser.add_argument("--experiment_indx", type=int, default=0) # no effect... just set it to 0.
     parser.add_argument("--gpu-id", type=int, default=0)
     parser.add_argument("--use-cpu", type=int, default=0)
+    parser.add_argument("--max-samples", type=int, default=None,
+                        help="Max test images per class (stratified). None = use all.")
 
     # method related parameters
     parser.add_argument('--eval-resolution', type=int, default=400)

@@ -6,7 +6,7 @@ visa_public_classes = ['candle', 'capsules', 'cashew', 'chewinggum',
                        'fryum', 'macaroni1', 'macaroni2',
                        'pcb1', 'pcb2', 'pcb3', 'pcb4', 'pipe_fryum']
 
-VISA_DIR = '../datasets/VisA_pytorch/1cls'
+VISA_DIR = os.environ.get('VISA_DIR', '../datasets/VisA_pytorch/1cls')
 
 
 def load_visa_public(category, k_shot, experiment_indx):

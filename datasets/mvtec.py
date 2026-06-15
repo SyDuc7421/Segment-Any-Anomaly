@@ -5,7 +5,7 @@ mvtec_classes = ['carpet', 'grid', 'leather', 'tile', 'wood',
                  'bottle', 'cable', 'capsule', 'hazelnut', 'metal_nut', 'pill',
                  'screw', 'toothbrush', 'transistor', 'zipper']
 
-MVTEC2D_DIR = '../datasets/mvtec_anomaly_detection'
+MVTEC2D_DIR = os.environ.get('MVTEC_DIR', '../datasets/mvtec_anomaly_detection')
 
 
 def load_mvtec(category, k_shot, experiment_indx):
