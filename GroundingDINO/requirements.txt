@@ -4,7 +4,7 @@ transformers>=4.24.0,<4.36.0
 addict
 yapf
 timm
-numpy<2.0.0
+numpy
 opencv-python
 supervision>=0.6.0,<0.21.0
 pycocotools
