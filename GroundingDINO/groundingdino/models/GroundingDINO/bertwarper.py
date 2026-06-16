@@ -26,7 +26,22 @@ class BertModelWarper(nn.Module):
 
         self.get_extended_attention_mask = bert_model.get_extended_attention_mask
         self.invert_attention_mask = bert_model.invert_attention_mask
-        self.get_head_mask = bert_model.get_head_mask
+        if hasattr(bert_model, 'get_head_mask'):
+            self.get_head_mask = bert_model.get_head_mask
+        else:
+            def _get_head_mask(head_mask, num_hidden_layers, is_attention_chunked=False):
+                if head_mask is not None:
+                    if head_mask.dim() == 1:
+                        head_mask = head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                        head_mask = head_mask.expand(num_hidden_layers, -1, -1, -1, -1)
+                    elif head_mask.dim() == 2:
+                        head_mask = head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
+                    if is_attention_chunked:
+                        head_mask = head_mask.unsqueeze(-1)
+                else:
+                    head_mask = [None] * num_hidden_layers
+                return head_mask
+            self.get_head_mask = _get_head_mask
 
     def forward(
         self,
