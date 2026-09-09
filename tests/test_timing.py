@@ -16,6 +16,24 @@ class FakeClock:
         return value
 
 
+class RecordingClock:
+    """Logs clock reads and sync calls into one shared, ordered list."""
+
+    def __init__(self, ticks):
+        self.ticks = list(ticks)
+        self.calls = 0
+        self.events = []
+
+    def clock(self):
+        self.events.append('clock')
+        value = self.ticks[self.calls]
+        self.calls += 1
+        return value
+
+    def sync(self):
+        self.events.append('sync')
+
+
 def test_stage_records_elapsed_milliseconds():
     timer = StageTimer(clock=FakeClock([0.0, 0.5]))
 
@@ -109,3 +127,14 @@ def test_summarize_timings_handles_empty_records():
         'n_images': 0,
         'peak_vram': 0.0,
     }
+
+
+def test_sync_precedes_every_clock_read():
+    recorder = RecordingClock([0.0, 1.0])
+
+    timer = StageTimer(clock=recorder.clock, sync=recorder.sync)
+    with timer.stage('sam'):
+        pass
+
+    assert recorder.events == ['sync', 'clock', 'sync', 'clock']
+    assert timer.snapshot() == {'sam': 1000.0}
