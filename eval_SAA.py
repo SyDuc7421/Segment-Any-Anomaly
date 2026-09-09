@@ -1,4 +1,6 @@
 import argparse
+import json
+import os
 
 import torch
 from tqdm import tqdm
@@ -192,6 +194,27 @@ def main(args):
     save_metric(metrics, dataset_classes[kwargs['dataset']], kwargs['class_name'],
                 kwargs['dataset'], csv_path)
 
+    meta_path = os.path.join(os.path.dirname(csv_path), 'run_meta.json')
+    meta = {}
+    if os.path.exists(meta_path):
+        with open(meta_path) as f:
+            meta = json.load(f)
+
+    meta[f"{kwargs['dataset']}-{kwargs['class_name']}"] = {
+        'gpu': torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu',
+        'n_images': metrics.get('n_images', 0),
+        'sam_variant': kwargs['sam_variant'],
+        'saliency_backbone': kwargs['saliency_backbone'],
+        'cal_pro': kwargs['cal_pro'],
+        'eval_resolution': kwargs['eval_resolution'],
+        'box_threshold': kwargs['box_threshold'],
+        'text_threshold': kwargs['text_threshold'],
+        'experiment_indx': kwargs['experiment_indx'],
+    }
+
+    with open(meta_path, 'w') as f:
+        json.dump(meta, f, indent=2)
+
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -243,8 +266,6 @@ def get_args():
 
 
 if __name__ == '__main__':
-    import os
-
     args = get_args()
     os.environ['CURL_CA_BUNDLE'] = ''
     os.environ['CUDA_VISIBLE_DEVICES'] = f"{args.gpu_id}"

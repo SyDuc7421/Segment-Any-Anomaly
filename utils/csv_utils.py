@@ -32,3 +32,19 @@ def save_metric(metrics, total_classes, class_name, dataset, csv_path):
             total_classes[indx] = f"{dataset}-{total_classes[indx]}"
         class_name = f"{dataset}-{class_name}"
     write_results(metrics, class_name, total_classes, csv_path)
+
+def completed_classes(csv_path, metric_key='p_ap'):
+    """Ten cac class da co ket qua that trong CSV.
+
+    write_results khoi tao moi class bang 0.00 truoc khi co so, nen dieu kien
+    "da xong" la metric_key > 0 chu khong phai "co dong trong file".
+    """
+    if not os.path.exists(csv_path):
+        return set()
+
+    df = pd.read_csv(csv_path, index_col=0)
+
+    if metric_key not in df.columns:
+        return set()
+
+    return set(df.index[df[metric_key] > 0].astype(str))
