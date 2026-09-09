@@ -133,3 +133,4 @@ dmypy.json
 
 # Serena
 .serena/
+.venv-test/
