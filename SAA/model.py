@@ -12,6 +12,7 @@ from GroundingDINO.groundingdino.util.utils import clean_state_dict, get_phrases
 from SAM.segment_anything import build_sam, SamPredictor
 # ImageNet pretrained feature extractor
 from .modelinet import ModelINet
+from utils.timing import StageTimer
 
 
 class Model(torch.nn.Module):
@@ -76,6 +77,13 @@ class Model(torch.nn.Module):
         self.out_size = out_size
         self.device = device
         self.is_sam_set = False
+
+        # Đo giờ. sync là bắt buộc trên CUDA: kernel chạy bất đồng bộ nên
+        # đọc đồng hồ mà không synchronize sẽ ra thời gian xếp hàng.
+        self.timer = StageTimer(
+            sync=torch.cuda.synchronize if 'cuda' in str(device) else None
+        )
+        self.last_timings = {}
 
     def load_dino(self, model_config_path, model_checkpoint_path, device) -> torch.nn.Module:
         '''
@@ -155,7 +163,8 @@ class Model(torch.nn.Module):
         dino_image, _ = self.transform(dino_image, None)  # 3, h, w
 
         if self.is_sam_set == False:
-            self.anomaly_region_refiner.set_image(image)
+            with self.timer.stage('sam'):
+                self.anomaly_region_refiner.set_image(image)
             self.is_sam_set = True
 
         ensemble_boxes = []
@@ -196,7 +205,8 @@ class Model(torch.nn.Module):
                 ensemble_boxes[i][2:] += ensemble_boxes[i][:2]
 
             # region 2 mask
-            masks, logits = self.region_refine(ensemble_boxes, ensemble_logits, H, W)
+            with self.timer.stage('sam'):
+                masks, logits = self.region_refine(ensemble_boxes, ensemble_logits, H, W)
 
         else:  # in case there is no box left
             masks = [np.zeros((H, W), dtype=bool)]
@@ -207,9 +217,10 @@ class Model(torch.nn.Module):
 
     def text_guided_region_proposal(self, dino_image, object_phrase):
         # directly use the output of Grounding DINO
-        boxes, logits, caption = self.get_grounding_output(
-            dino_image, object_phrase, device=self.device
-        )
+        with self.timer.stage('dino'):
+            boxes, logits, caption = self.get_grounding_output(
+                dino_image, object_phrase, device=self.device
+            )
 
         return boxes, logits, caption
 
@@ -455,45 +466,51 @@ class Model(torch.nn.Module):
         return anomaly_map
 
     def forward(self, image: np.ndarray):
-        ####### Object TGMP for object detection
-        object_masks, object_logits, object_area = self.ensemble_text_guided_mask_proposal(
-            image,
-            [self.object_prompt],
-            ['PlaceHolder'],
-            self.object_max_area,
-            self.object_min_area,
-            self.box_threshold,
-            self.text_threshold
-        )
+        self.timer.reset()
 
-        ###### Reasoning: set the anomaly area threshold according to object area
-        self.defect_max_area = object_area * self.defect_area_threshold
-        self.defect_min_area = 0.
+        with self.timer.stage('total'):
+            ####### Object TGMP for object detection
+            object_masks, object_logits, object_area = self.ensemble_text_guided_mask_proposal(
+                image,
+                [self.object_prompt],
+                ['PlaceHolder'],
+                self.object_max_area,
+                self.object_min_area,
+                self.box_threshold,
+                self.text_threshold
+            )
 
-        ####### language prompts and property prompts $\mathcal{P}^L$ $\mathcal{P}^S$
-        ####### for region proposal and filter
-        defect_masks, defect_logits, _ = self.ensemble_text_guided_mask_proposal(
-            image,
-            self.defect_prompt_list,
-            self.filter_prompt_list,
-            self.defect_max_area,
-            self.defect_min_area,
-            self.box_threshold,
-            self.text_threshold
-        )
+            ###### Reasoning: set the anomaly area threshold according to object area
+            self.defect_max_area = object_area * self.defect_area_threshold
+            self.defect_min_area = 0.
 
-        ###### saliency prompts $\mathcal{P}^S$
-        defect_masks, defect_rescores, similarity_map = self.saliency_prompting(
-            image,
-            object_masks,
-            defect_masks,
-            defect_logits
-        )
+            ####### language prompts and property prompts $\mathcal{P}^L$ $\mathcal{P}^S$
+            ####### for region proposal and filter
+            defect_masks, defect_logits, _ = self.ensemble_text_guided_mask_proposal(
+                image,
+                self.defect_prompt_list,
+                self.filter_prompt_list,
+                self.defect_max_area,
+                self.defect_min_area,
+                self.box_threshold,
+                self.text_threshold
+            )
 
-        ##### confidence prompts $\mathcal{P}^C$
-        anomaly_map = self.confidence_prompting(defect_masks, defect_rescores, similarity_map)
+            ###### saliency prompts $\mathcal{P}^S$
+            with self.timer.stage('saliency'):
+                defect_masks, defect_rescores, similarity_map = self.saliency_prompting(
+                    image,
+                    object_masks,
+                    defect_masks,
+                    defect_logits
+                )
 
-        self.is_sam_set = False
+            ##### confidence prompts $\mathcal{P}^C$
+            anomaly_map = self.confidence_prompting(defect_masks, defect_rescores, similarity_map)
+
+            self.is_sam_set = False
+
+        self.last_timings = self.timer.snapshot()
 
         appendix = {'similarity_map': similarity_map}
 

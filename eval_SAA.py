@@ -1,5 +1,6 @@
 import argparse
 
+import torch
 from tqdm import tqdm
 
 import SAA as SegmentAnyAnomaly
@@ -7,6 +8,7 @@ from datasets import *
 from utils.csv_utils import *
 from utils.eval_utils import *
 from utils.metrics import *
+from utils.timing import summarize_timings
 from utils.training_utils import *
 
 
@@ -35,6 +37,10 @@ def eval(
     gt_list = []
     gt_mask_list = []
     names = []
+    timing_records = []
+
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
 
     for (data, mask, label, name, img_type) in tqdm(test_data):
 
@@ -50,6 +56,7 @@ def eval(
             gt_mask_list += [m]
 
             score, appendix = model(d)
+            timing_records.append(model.last_timings)
             scores += [score]
 
             similarity_map = appendix['similarity_map']
@@ -81,6 +88,12 @@ def eval(
     else:
         gt_list = np.stack(gt_list, axis=0)
         result_dict = metric_cal(np.array(scores), gt_list, gt_mask_list, cal_pro=cal_pro)
+
+    peak_vram_mb = 0.0
+    if torch.cuda.is_available():
+        peak_vram_mb = torch.cuda.max_memory_allocated() / (1024 ** 2)
+
+    result_dict.update(summarize_timings(timing_records, len(names), peak_vram_mb))
 
     if is_vis:
         plot_sample_cv2(
