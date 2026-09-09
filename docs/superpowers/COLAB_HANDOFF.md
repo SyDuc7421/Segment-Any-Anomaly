@@ -201,6 +201,23 @@ Không phải lỗi mới, và Plan 1 cố ý không sửa (nằm ngoài phạm 
 
 ---
 
+## 3.3 Một việc còn nợ, chặn Bước 2 (không chặn Bước 0-1)
+
+`csv_path` là `{root_dir}/csv/{dataset}-indx-{experiment_indx}.csv` (`utils/training_utils.py:38`). Nó **không mang danh tính cấu hình** — không có `sam_variant`, không có `saliency_backbone`. Và `run_MVTec.py` hardcode `root_dir = './result'`, không truyền `--sam-variant`.
+
+Hệ quả:
+- Runner chỉ chạy được cấu hình baseline. Không chạy được cấu hình Lite.
+- Chạy tay `eval_SAA.py` với `--root-dir` mặc định thì ghi đè thẳng lên hàng baseline.
+- `run_meta.json` cũng chỉ khoá theo `{dataset}-{class_name}`, nên đổi cấu hình là entry cũ bị ghi đè.
+
+Bước 1 **không** vướng, vì cell profiling trong notebook gọi thẳng `eval_SAA.py` với `--root-dir` riêng cho từng cấu hình. Nhưng Bước 2 (full run baseline + Lite trên cả hai dataset, spec mục 6.2) thì vướng hẳn: không có cách nào giữ hai kết quả cạnh nhau, mà đó chính là thứ để vẽ Pareto.
+
+Cách sửa khi tới lúc: hoặc đưa `sam_variant`/`saliency_backbone` vào `exp_name` trong `get_dir_from_args` (chỉ thêm hậu tố khi **khác mặc định**, để đường dẫn baseline không đổi và notebook cũ không gãy), hoặc cho runner đọc `ROOT_DIR` / `SAM_VARIANT` / `SALIENCY_BACKBONE` từ biến môi trường như `CAL_PRO`.
+
+Lưu ý kèm theo: guard resume hiện hardcode `sam_variant='vit_h'`, `saliency_backbone='wide_resnet50'` trong `run_identity` của cả hai runner, vì runner chưa phơi hai tham số đó ra. Sửa xong việc trên thì phải cập nhật chỗ này cùng lúc, nếu không guard sẽ so với hằng số sai.
+
+---
+
 ## 4. Sau khi checklist này xanh hết
 
 Theo spec mục 6.2:
