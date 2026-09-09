@@ -54,17 +54,31 @@ class StageTimer:
 def summarize_timings(records, n_images, peak_vram_mb):
     """Gộp danh sách snapshot theo từng ảnh thành các cột đưa vào CSV.
 
+    Bỏ ảnh đầu tiên khỏi trung bình khi có nhiều hơn 1 bản ghi: ảnh đầu
+    "gánh" lazy CUDA init, cuDNN autotune, và first-touch allocation, nên
+    thời gian đo được lệch cao so với các ảnh sau — trên vài chục ảnh của
+    một lần profiling ngắn (spec mục 6.2 Bước 1), lệch này có thể tới hàng
+    chục phần trăm. Hệ quả: t_dino/t_sam/t_saliency/t_total là trung bình
+    trên (N-1) ảnh, trong khi n_images vẫn báo cáo đúng N ảnh thực sự đã
+    chạy — hai con số này KHÔNG cùng mẫu số.
+
     Args:
         records: danh sách dict trả về từ StageTimer.snapshot(), mỗi ảnh một dict.
         n_images: số ảnh thực sự đã chạy trong lần chạy này.
         peak_vram_mb: đỉnh VRAM, đơn vị MB.
     """
     summary = {}
-    divisor = len(records) if records else 1
+
+    if len(records) > 1:
+        timed_records = records[1:]
+    else:
+        timed_records = records
+
+    divisor = len(timed_records) if timed_records else 1
 
     for stage_name, column in STAGE_TO_COLUMN:
-        total = sum(record.get(stage_name, 0.0) for record in records)
-        summary[column] = total / divisor if records else 0.0
+        total = sum(record.get(stage_name, 0.0) for record in timed_records)
+        summary[column] = total / divisor if timed_records else 0.0
 
     summary['n_images'] = n_images
     summary['peak_vram'] = peak_vram_mb

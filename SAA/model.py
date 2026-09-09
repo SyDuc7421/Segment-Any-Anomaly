@@ -42,6 +42,10 @@ class Model(torch.nn.Module):
             text_threshold: the threshold for box filter
             out_size: the desired output resolution of anomaly map
             device: the running device, e.g, 'cuda:0'
+            sam_variant: the SAM backbone variant, e.g. 'vit_h' (default, baseline),
+                'mobile_sam', 'efficientvit_l0'
+            saliency_backbone: the ImageNet backbone for the saliency extractor,
+                e.g. 'wide_resnet50' (default, baseline), 'mobilenetv3'
 
         NOTE:
             1. In our published paper, the property prompt P^P is applied to R (region).

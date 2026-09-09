@@ -191,9 +191,9 @@ def main(args):
     for k, v in metrics.items():
         logger.info(f"{kwargs['class_name']}======={k}: {v:.2f}")
 
-    save_metric(metrics, dataset_classes[kwargs['dataset']], kwargs['class_name'],
-                kwargs['dataset'], csv_path)
-
+    # Ghi run_meta.json TRUOC save_metric: neu tien trinh bi kill giua hai
+    # buoc, class khong duoc danh dau "done" ma thieu metadata - tranh vinh
+    # vien bi coi la khong dang tin cay boi check_run_identity o cac runner.
     meta_path = os.path.join(os.path.dirname(csv_path), 'run_meta.json')
     meta = {}
     if os.path.exists(meta_path):
@@ -203,6 +203,7 @@ def main(args):
     meta[f"{kwargs['dataset']}-{kwargs['class_name']}"] = {
         'gpu': torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu',
         'n_images': metrics.get('n_images', 0),
+        'max_samples': kwargs['max_samples'],
         'sam_variant': kwargs['sam_variant'],
         'saliency_backbone': kwargs['saliency_backbone'],
         'cal_pro': kwargs['cal_pro'],
@@ -214,6 +215,9 @@ def main(args):
 
     with open(meta_path, 'w') as f:
         json.dump(meta, f, indent=2)
+
+    save_metric(metrics, dataset_classes[kwargs['dataset']], kwargs['class_name'],
+                kwargs['dataset'], csv_path)
 
 
 def str2bool(v):
