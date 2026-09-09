@@ -148,6 +148,8 @@ def main(args):
         text_threshold=kwargs['text_threshold'],
         out_size=kwargs['eval_resolution'],
         device=kwargs['device'],
+        sam_variant=kwargs['sam_variant'],
+        saliency_backbone=kwargs['saliency_backbone'],
     )
 
     general_prompts = SegmentAnyAnomaly.build_general_prompts(kwargs['class_name'])
@@ -228,6 +230,12 @@ def get_args():
 
     parser.add_argument("--box_threshold", type=float, default=0.1, help="box threshold")
     parser.add_argument("--text_threshold", type=float, default=0.1, help="text threshold")
+    parser.add_argument('--sam-variant', type=str, default='vit_h',
+                        choices=['vit_h', 'mobile_sam', 'efficientvit_l0'],
+                        help='SAM backbone. vit_h la baseline.')
+    parser.add_argument('--saliency-backbone', type=str, default='wide_resnet50',
+                        choices=['wide_resnet50', 'mobilenetv3'],
+                        help='ImageNet backbone cho saliency. wide_resnet50 la baseline.')
 
     args = parser.parse_args()
 

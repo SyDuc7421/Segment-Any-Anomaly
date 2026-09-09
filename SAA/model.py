@@ -8,10 +8,7 @@ import GroundingDINO.groundingdino.datasets.transforms as T
 from GroundingDINO.groundingdino.models import build_model
 from GroundingDINO.groundingdino.util.slconfig import SLConfig
 from GroundingDINO.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
-# segment anything
-from SAM.segment_anything import build_sam, SamPredictor
-# ImageNet pretrained feature extractor
-from .modelinet import ModelINet
+from .backbones import build_sam_predictor, build_saliency_extractor
 from utils.timing import StageTimer
 
 
@@ -31,6 +28,8 @@ class Model(torch.nn.Module):
                  ## Others
                  out_size=256,
                  device='cuda',
+                 sam_variant='vit_h',
+                 saliency_backbone='wide_resnet50',
 
                  ):
         '''
@@ -54,7 +53,7 @@ class Model(torch.nn.Module):
 
         # Build Model
         self.anomaly_region_generator = self.load_dino(dino_config_file, dino_checkpoint, device=device)
-        self.anomaly_region_refiner = SamPredictor(build_sam(checkpoint=sam_checkpoint).to(device))
+        self.anomaly_region_refiner = build_sam_predictor(sam_variant, sam_checkpoint, device)
 
         self.transform = T.Compose(
             [
@@ -64,7 +63,7 @@ class Model(torch.nn.Module):
             ]
         )
 
-        self.visual_saliency_extractor = ModelINet(device=device)
+        self.visual_saliency_extractor = build_saliency_extractor(saliency_backbone, device)
 
         self.pixel_mean = [123.675, 116.28, 103.53]
         self.pixel_std = [58.395, 57.12, 57.375]
