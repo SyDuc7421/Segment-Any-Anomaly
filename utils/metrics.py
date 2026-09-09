@@ -39,13 +39,9 @@ def metric_cal(scores, gt_list, gt_mask_list, cal_pro=False):
     # calculate max-f1 region
     if cal_pro:
         pro_auc_score = cal_pro_metric(gt_mask_list, scores, fpr_thresh=0.3)
-        # calculate max-f1 region
-        # max_f1_region = calculate_max_f1_region(gt_mask_list, scores)
-
+        max_f1_region = calculate_max_f1_region(gt_mask_list, scores)
     else:
         pro_auc_score = 0
-        # pro_auc_score = 0
-        # calculate max-f1 region
         max_f1_region = 0
 
     result_dict = {
@@ -57,6 +53,7 @@ def metric_cal(scores, gt_list, gt_mask_list, cal_pro=False):
         # 'i_thresh': img_threshold,
         'p_f1': pxl_f1 * 100,
         # 'p_thresh': pxl_threshold,
+        'r_f1': max_f1_region * 100,
         'p_pro': pro_auc_score * 100,
     }
 
