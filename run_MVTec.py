@@ -1,13 +1,17 @@
 import json
 import os
+import subprocess
+import sys
 from datasets import dataset_classes
-from multiprocessing import Pool
 
 from utils.csv_utils import check_run_identity, completed_classes
 
 if __name__ == '__main__':
 
-    pool = Pool(processes=1)
+    # Danh sach class chay hong. Truoc day day la Pool(processes=1) +
+    # apply_async(os.system, ...), nuot sach ma tra ve: ca 15 class chet o
+    # dong import van cho ra exit code 0 sau mot phut, nhin nhu chay xong.
+    failures = []
 
     dataset_list = ['mvtec']
     gpu_indx = 0
@@ -59,22 +63,42 @@ if __name__ == '__main__':
                 print(f'CANH BAO: {cls} co ket qua trong CSV nhung KHONG dang '
                       f'tin ({reason}) - chay lai va ghi de.')
 
-            sh_method = (
-                f'python eval_SAA.py '
-                f'--dataset {dataset} '
-                f'--class-name {cls} '
-                f'--batch-size 1 '
-                f'--root-dir {root_dir} '
-                f'--cal-pro {run_identity["cal_pro"]} '
-                f'--sam-variant {run_identity["sam_variant"]} '
-                f'--saliency-backbone {run_identity["saliency_backbone"]} '
-                f'--gpu-id {gpu_indx} '
-            )
+            cmd = [
+                'python', 'eval_SAA.py',
+                '--dataset', dataset,
+                '--class-name', cls,
+                '--batch-size', '1',
+                '--root-dir', root_dir,
+                '--cal-pro', str(run_identity['cal_pro']),
+                '--sam-variant', run_identity['sam_variant'],
+                '--saliency-backbone', run_identity['saliency_backbone'],
+                '--gpu-id', str(gpu_indx),
+            ]
             if run_identity['max_samples'] is not None:
-                sh_method += f'--max-samples {run_identity["max_samples"]} '
+                cmd += ['--max-samples', str(run_identity['max_samples'])]
 
-            print(sh_method)
-            pool.apply_async(os.system, (sh_method,))
+            print(' '.join(cmd))
+            returncode = subprocess.run(cmd).returncode
 
-    pool.close()
-    pool.join()
+            if returncode != 0:
+                print(f'LOI: {cls} thoat voi ma {returncode}')
+                failures.append((cls, returncode))
+
+                # Class dau tien hong gan nhu luon la moi truong hong (thieu
+                # package, thieu checkpoint, sai duong dan dataset), khong phai
+                # loi rieng cua class do. Dung ngay thay vi lap lai cung mot
+                # loi cho moi class con lai.
+                if len(failures) == 1:
+                    print('Class dau tien da hong - nhieu kha nang la moi truong, '
+                          'khong phai du lieu. Dung lai de ban doc loi o tren.')
+                    break
+
+    if failures:
+        print(f'\n{len(failures)} class chay hong:')
+        for cls, returncode in failures:
+            print(f'  {cls}: ma thoat {returncode}')
+        print('Cac class da chay xong van nam trong CSV; chay lai se tiep tuc '
+              'tu cho do (resume theo tung class).')
+        sys.exit(1)
+
+    print('\nTat ca class chay xong.')
