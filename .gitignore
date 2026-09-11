@@ -134,3 +134,4 @@ dmypy.json
 # Serena
 .serena/
 .venv-test/
+.DS_Store
