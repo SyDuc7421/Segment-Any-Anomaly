@@ -174,7 +174,7 @@ def main(args):
 
         # visual-related parameters
         resolution=kwargs['eval_resolution'],
-        is_vis=True,
+        is_vis=kwargs['vis'],
 
         # experimental parameters
         dataset=kwargs['dataset'],

@@ -15,7 +15,10 @@ if __name__ == '__main__':
 
     dataset_list = ['visa_public']
     gpu_indx = 0
-    root_dir = './result'
+    # ROOT_DIR cho phep tro thang vao Google Drive, de moi class chay xong la
+    # an toan ngay thay vi cho toi cuoi lan chay moi copy ra. Cung la cach de
+    # moi cau hinh Phase B co thu muc rieng, khong ghi de len nhau.
+    root_dir = os.environ.get('ROOT_DIR') or './result'
 
     # Khong dat mac dinh. Spec muc 6.1: moi con so vao luan van phai chay full
     # test set, vi normalize() phu thuoc vao tap anh cua lan chay do.
@@ -28,6 +31,11 @@ if __name__ == '__main__':
     # r_f1 rong. Mac dinh False vi PRO va r_f1 deu tinh tren CPU va cham.
     # `or 'False'`: cung ly do nhu MAX_SAMPLES o tren.
     cal_pro = os.environ.get('CAL_PRO') or 'False'
+
+    # Anh truc quan hoa: ~117 anh moi class. Tat di khi ROOT_DIR nam tren Drive,
+    # neu khong moi lan chay phai ghi hang nghin file nho qua Drive FUSE.
+    # Mac dinh 'True' de giu nguyen hanh vi cu.
+    vis = os.environ.get('VIS') or 'True'
 
     # Danh tinh cua lan chay nay - dung CHUNG mot dict de dung lenh command
     # line va de quyet dinh skip, tranh viec hai noi lech nhau. sam_variant
@@ -74,6 +82,7 @@ if __name__ == '__main__':
                 '--sam-variant', run_identity['sam_variant'],
                 '--saliency-backbone', run_identity['saliency_backbone'],
                 '--gpu-id', str(gpu_indx),
+                '--vis', vis,
             ]
             if run_identity['max_samples'] is not None:
                 cmd += ['--max-samples', str(run_identity['max_samples'])]
