@@ -10,6 +10,12 @@ SAM_VARIANTS = {
     'efficientvit_l0': 'EfficientViT-SAM-L0',
 }
 
+DEFAULT_SAM_CHECKPOINTS = {
+    'vit_h': 'weights/sam_vit_h_4b8939.pth',
+    'mobile_sam': 'weights/mobile_sam.pt',
+    'efficientvit_l0': 'weights/efficientvit_sam_l0.pt',
+}
+
 SALIENCY_BACKBONES = {
     'wide_resnet50': 'wide_resnet50_2',
     'mobilenetv3': 'mobilenetv3_large_100',

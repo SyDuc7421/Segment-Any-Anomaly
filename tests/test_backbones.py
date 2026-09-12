@@ -59,3 +59,12 @@ def test_unknown_saliency_backbone_lists_the_valid_names():
     message = str(excinfo.value)
     assert 'resnet9000' in message
     assert 'wide_resnet50' in message
+
+
+def test_default_checkpoints_cover_every_sam_variant():
+    """Runner tra bang nay theo sam_variant, nen thieu mot key la KeyError."""
+    assert set(backbones.DEFAULT_SAM_CHECKPOINTS) == set(backbones.SAM_VARIANTS)
+
+
+def test_default_checkpoint_for_baseline_is_the_vit_h_weight():
+    assert backbones.DEFAULT_SAM_CHECKPOINTS['vit_h'] == 'weights/sam_vit_h_4b8939.pth'

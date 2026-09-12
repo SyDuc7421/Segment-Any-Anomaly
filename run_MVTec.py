@@ -4,6 +4,7 @@ import subprocess
 import sys
 from datasets import dataset_classes
 
+from SAA.backbones import DEFAULT_SAM_CHECKPOINTS
 from utils.csv_utils import check_run_identity, completed_classes
 
 if __name__ == '__main__':
@@ -41,11 +42,20 @@ if __name__ == '__main__':
     # line va de quyet dinh skip, tranh viec hai noi lech nhau. sam_variant
     # va saliency_backbone chua co CLI env o day (runner nay chi chay
     # baseline), nen khoa cung theo default cua eval_SAA.py.
+    # Mac dinh la baseline. Buoc 2 cua spec muc 6.2 chay them cau hinh Lite,
+    # dat SAM_VARIANT / SALIENCY_BACKBONE de doi - VA dat ROOT_DIR khac, vi
+    # csv_path khong mang danh tinh cau hinh nen dung chung la ghi de len nhau.
+    sam_variant = os.environ.get('SAM_VARIANT') or 'vit_h'
+    saliency_backbone = os.environ.get('SALIENCY_BACKBONE') or 'wide_resnet50'
+    sam_checkpoint = os.environ.get('SAM_CHECKPOINT') or DEFAULT_SAM_CHECKPOINTS[sam_variant]
+
+    # sam_variant va saliency_backbone NAM TRONG danh tinh: doi chung la con so
+    # doi, nen ket qua cu khong con so sanh duoc va phai chay lai.
     run_identity = {
         'max_samples': int(max_samples) if max_samples else None,
         'cal_pro': cal_pro.lower() in ('yes', 'true', 't', '1'),
-        'sam_variant': 'vit_h',
-        'saliency_backbone': 'wide_resnet50',
+        'sam_variant': sam_variant,
+        'saliency_backbone': saliency_backbone,
     }
 
     for dataset in dataset_list:
@@ -80,6 +90,7 @@ if __name__ == '__main__':
                 '--cal-pro', str(run_identity['cal_pro']),
                 '--sam-variant', run_identity['sam_variant'],
                 '--saliency-backbone', run_identity['saliency_backbone'],
+                '--sam_checkpoint', sam_checkpoint,
                 '--gpu-id', str(gpu_indx),
                 '--vis', vis,
             ]
