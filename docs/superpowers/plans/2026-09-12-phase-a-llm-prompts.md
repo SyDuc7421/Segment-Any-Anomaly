@@ -11,8 +11,8 @@ nguyen tung dong. Prompt do LLM sinh di qua mot loader JSON moi va mot setter
 moi (`set_property_from_dict`), tranh hoan toan tro parse theo vi tri tu o spec
 muc 2.4. Mot co CLI `--prompt-source` chon nhanh.
 
-**Tech Stack:** Python, OpenAI SDK (`openai`), model `gpt-5.6-luna`, Pydantic, pytest.
-Khoa API doc tu `OPENAI_API_KEY` trong `.env` (da gitignore o dong 107, chua track).
+**Tech Stack:** Python, `transformers`, model trong so mo `Qwen/Qwen2.5-VL-7B-Instruct`
+chay cuc bo tren Colab, pytest. **Khong goi API ngoai.**
 
 **Spec:** `docs/superpowers/specs/2026-08-28-saa-lite-llm-prompt-design.md` muc 5
 
@@ -62,8 +62,10 @@ luot DINO**, khong chi bao cao accuracy.
 - **JSON sinh ra phai commit vao git**: dieu kien de hoi dong tai lap ma khong
   can API key.
 - **Full test set**: khong dung `--max-samples` cho bat ky con so nao vao luan van.
-- **LLM**: `gpt-5.6-luna` qua OpenAI SDK. Khoa doc tu `.env`, **khong hard-code,
-  khong in ra log**. `.env` da nam trong `.gitignore`; kiem lai truoc khi commit.
+- **LLM chay cuc bo, khong goi API ngoai.** Model trong so mo, greedy decoding
+  (`do_sample=False`) nen **tai lap duoc 100%**: cung trong so + cung prompt =
+  cung output. Day la tuyen bo manh hon "zero-shot neu ban co khoa API".
+  Ghi lai `MODEL_ID` va revision hash vao file JSON sinh ra.
 - **Bo self-refine** (spec muc 5.7): MVTec khong co validation split, moi subset
   de cham deu phai cat tu test, tu ro ri.
 
@@ -100,7 +102,7 @@ deu co the bi van lai.
 | `SAA/prompts/generated/mvtec-vision.json` | Moi | " |
 | `SAA/prompts/generated/visa_public-blind.json` | Moi | " |
 | `SAA/prompts/generated/visa_public-vision.json` | Moi | " |
-| `tools/gen_prompts.py` | Moi | Goi OpenAI API (`gpt-5.6-luna`) sinh JSON |
+| `tools/gen_prompts.py` | Moi | Chay VLM trong so mo cuc bo, sinh JSON |
 | `SAA/model.py` | Sua | Them `set_property_from_dict()` |
 | `eval_SAA.py` | Sua | Them `--prompt-source`, `--llm-prompt-file` |
 | `run_MVTec.py`, `run_VisA_public.py` | Sua | Doc `PROMPT_SOURCE`, `LLM_PROMPT_FILE`; dua vao run_identity |
@@ -604,7 +606,7 @@ git commit -m "feat: select the prompt source, from generic floor to LLM to manu
 
 ---
 
-## Task 4: `tools/gen_prompts.py`
+## Task 4: `tools/gen_prompts.py` — VLM cuc bo
 
 **Files:**
 - Create: `tools/gen_prompts.py`, `tools/__init__.py`
@@ -613,82 +615,98 @@ git commit -m "feat: select the prompt source, from generic floor to LLM to manu
 **Interfaces:**
 - Produces:
   - `train_image_paths(dataset, class_name, root, limit) -> list[str]` — **chi tra ve anh trong `train/good`**
-  - `build_user_content(class_name, image_paths) -> list[dict]`
-  - `PromptSpec` (Pydantic) — schema ma API tra ve
-  - CLI: `python tools/gen_prompts.py --dataset mvtec --variant blind --out SAA/prompts/generated/mvtec-blind.json`
+  - `build_messages(class_name, n_images) -> list[dict]`
+  - `parse_spec(text, class_name) -> dict` — boc JSON ra khoi output model
+  - CLI: `python tools/gen_prompts.py --dataset mvtec --variant blind --out ...`
 
-**Ranh gioi ro ri la phan quan trong nhat cua task nay.** Spec muc 5.5: script
-chi duoc doc `train` split, hard-code trong code. Luan van phai trich duoc dong
-code chung minh. Test phai chan duoc moi duong khac.
+### Vi sao chay cuc bo tot hon goi API
 
-### Hai cho chua chac chan, phai kiem truoc khi ton tien
+Khong chi vi tien. Ba diem manh hon ve mat hoc thuat:
 
-Code duoi day viet theo Responses API cua OpenAI SDK. Hai thu **chua duoc kiem
-chung voi `gpt-5.6-luna`**:
+1. **Tai lap duoc 100%.** Greedy decoding tren trong so co dinh: hoi dong tai
+   sinh duoc chinh xac cung mot file JSON. API thi khong — model doi phia sau
+   cung mot ten, va khong ai kiem chung duoc.
+2. **Tuyen bo manh hon.** "Zero-shot, khong can API tra phi" manh hon "zero-shot
+   neu ban co khoa GPT".
+3. **Khong phu thuoc ben thu ba.** Toan bo pipeline chay tren mot may.
 
-1. **Ten method structured output.** Ban dung `client.responses.parse(...,
-   text_format=PromptSpec)`. Mot so ban SDK dung
-   `client.beta.chat.completions.parse(..., response_format=...)` voi shape
-   message khac han.
-2. **Shape khoi anh.** Responses API dung
-   `{'type': 'input_image', 'image_url': 'data:image/png;base64,...'}`;
-   Chat Completions dung `{'type': 'image_url', 'image_url': {'url': ...}}`.
+Chi phi: khoang 15 phut GPU moi lan sinh, thay vi vai chuc xu.
 
-Step 1 duoi day la mot lan goi **mot class duy nhat** de kiem ca hai truoc khi
-chay 54 lan. Sai thi sua theo tai lieu SDK dang cai, dung doan.
+Doi lai: chat luong prompt thap hon model dau bang. Do la mot phan cua ket qua
+can bao cao, khong phai loi.
 
-- [ ] **Step 1: Probe API bang mot lan goi**
+### Mot canh bao ap dung cho MOI LLM, phai ghi vao Limitations
 
-Truoc khi viet gi them, xac nhan model va surface chay duoc:
+SAA+ la repo cong khai, paper dang IEEE. **Bat ky LLM nao** — Qwen, GPT, Claude —
+deu co the da thay prompt thu cong cua tac gia trong du lieu huan luyen. Neu P2
+tien sat P3 mot cach dang ngo, do co the la **nho** chu khong phai suy.
+
+Cach phat hien, phai lam o Task 5: so tung chu giua prompt LLM sinh va prompt
+thu cong. Trung khit tren nhieu class la dau hieu nho; trung y ma khac chu la
+suy that. Ket qua so sanh nay vao phan Limitations cua luan van.
+
+### Hai cho chua chac chan, probe truoc
+
+`transformers` doi API giua cac ban. Code duoi dung **lop `Auto*`** thay vi ten
+lop cu the (`Qwen2_5_VLForConditionalGeneration`...) — `Auto*` tu tra ra lop dung
+tu config, nen khong phai doan. Nhung hai thu van chua kiem chung:
+
+1. `AutoModelForImageTextToText` co nhan duoc model nay tren ban `transformers`
+   dang cai khong.
+2. Shape khoi anh trong chat template: `{'type': 'image'}` (anh truyen rieng cho
+   processor) so voi `{'type': 'image', 'image': <PIL>}`.
+
+Step 1 kiem ca hai bang mot lan chay, truoc khi ton 15 phut GPU.
+
+- [ ] **Step 1: Probe model va chat template**
 
 ```bash
-pip install -q openai pydantic python-dotenv
+pip install -q "transformers>=4.45" accelerate bitsandbytes qwen-vl-utils
 python - <<'PY'
-import os
-from dotenv import load_dotenv
-from pydantic import BaseModel
-from openai import OpenAI
+import torch
+from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
 
-load_dotenv()
-assert os.environ.get('OPENAI_API_KEY'), 'OPENAI_API_KEY chua co trong .env'
+MODEL_ID = 'Qwen/Qwen2.5-VL-7B-Instruct'
 
-class Probe(BaseModel):
-    object_prompt: str
-    defect_prompts: list[str]
+# 4-bit: 7B fp16 la ~15 GB, sat tran 16 GB cua T4. 4-bit xuong ~5 GB.
+quant = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16)
 
-client = OpenAI()
-r = client.responses.parse(
-    model='gpt-5.6-luna',
-    input=[{'role': 'user',
-            'content': [{'type': 'input_text',
-                         'text': 'Industrial anomaly detection for carpet. '
-                                 'Give the object noun and two defect phrases.'}]}],
-    text_format=Probe,
+processor = AutoProcessor.from_pretrained(MODEL_ID)
+model = AutoModelForImageTextToText.from_pretrained(
+    MODEL_ID, quantization_config=quant, device_map='auto'
 )
-print(r.output_parsed)
+print('nap duoc:', type(model).__name__)
+
+messages = [{'role': 'user', 'content': [
+    {'type': 'text', 'text': 'Reply with exactly this JSON and nothing else: {"ok": true}'}
+]}]
+text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+inputs = processor(text=[text], return_tensors='pt').to(model.device)
+out = model.generate(**inputs, max_new_tokens=64, do_sample=False)
+print(processor.decode(out[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True))
 PY
 ```
 
-Chay duoc thi di tiep. Loi `AttributeError` hoac `NotFoundError` tren ten model
-thi ghi lai thong bao loi vao Notes va sua theo tai lieu cua ban SDK dang cai —
-**dung suy tu shape cua SDK khac**.
+Chay duoc thi di tiep. Loi thi ghi thong bao vao Notes va sua theo tai lieu ban
+`transformers` dang cai — **dung suy tu bo nho**.
 
-Lam tuong tu voi mot anh de xac nhan shape `input_image` truoc khi chay variant
-`vision`.
+Lam tuong tu voi mot anh truoc khi chay variant `vision`.
 
 - [ ] **Step 2: Viet test that bai**
+
+Test khong nap model — chi kiem ranh gioi ro ri, dung khoi message, va boc JSON.
 
 ```python
 import os
 
 import pytest
 
-from tools.gen_prompts import build_user_content, train_image_paths
+from tools.gen_prompts import build_messages, parse_spec, train_image_paths
 
 
 @pytest.fixture
 def fake_dataset(tmp_path):
-    """Dung cay thu muc giong MVTec, co ca anh test va anh anomaly."""
+    """Cay thu muc giong MVTec, co ca anh test va ground truth."""
     root = tmp_path / 'mvtec'
     for sub in ('train/good', 'test/good', 'test/color', 'ground_truth/color'):
         (root / 'carpet' / sub).mkdir(parents=True)
@@ -712,30 +730,61 @@ def test_limit_is_respected(fake_dataset):
 
 
 def test_paths_are_sorted_for_reproducibility(fake_dataset):
+    """Greedy decoding chi tai lap duoc neu dau vao co thu tu on dinh."""
     paths = train_image_paths('mvtec', 'carpet', fake_dataset, limit=10)
 
     assert paths == sorted(paths)
 
 
-def test_blind_variant_sends_no_image():
-    content = build_user_content('carpet', image_paths=[])
+def test_blind_variant_has_no_image_block():
+    content = build_messages('carpet', n_images=0)[-1]['content']
 
-    assert all(block['type'] == 'input_text' for block in content)
+    assert all(block['type'] == 'text' for block in content)
 
 
-def test_vision_variant_sends_images_before_text(fake_dataset):
-    paths = train_image_paths('mvtec', 'carpet', fake_dataset, limit=2)
+def test_vision_variant_puts_images_before_text():
+    content = build_messages('carpet', n_images=2)[-1]['content']
 
-    content = build_user_content('carpet', image_paths=paths)
-
-    assert [b['type'] for b in content] == ['input_image', 'input_image', 'input_text']
-    assert content[0]['image_url'].startswith('data:image/png;base64,')
+    assert [b['type'] for b in content] == ['image', 'image', 'text']
 
 
 def test_class_name_reaches_the_prompt():
-    content = build_user_content('metal_nut', image_paths=[])
+    content = build_messages('metal_nut', n_images=0)[-1]['content']
 
     assert 'metal_nut' in content[-1]['text']
+
+
+def test_parse_spec_extracts_json_from_prose():
+    """Model trong so mo hay boc JSON trong ```json ... ``` hoac them loi dan."""
+    text = 'Here is the spec:\n```json\n{"object_prompt": "carpet", ' \
+           '"object_number": 1, "k_mask": 5, "defect_area_threshold": 0.9, ' \
+           '"defect_prompts": [{"text": "hole", "filter": "carpet"}]}\n```\nHope that helps!'
+
+    spec = parse_spec(text, 'carpet')
+
+    assert spec['class'] == 'carpet'
+    assert spec['object_prompt'] == 'carpet'
+
+
+def test_parse_spec_accepts_bare_json():
+    text = '{"object_prompt": "grid", "object_number": 1, "k_mask": 5, ' \
+           '"defect_area_threshold": 0.9, ' \
+           '"defect_prompts": [{"text": "bent wire", "filter": "grid"}]}'
+
+    assert parse_spec(text, 'grid')['object_prompt'] == 'grid'
+
+
+def test_parse_spec_rejects_output_with_no_json():
+    with pytest.raises(ValueError):
+        parse_spec('I am not sure what you want.', 'carpet')
+
+
+def test_parse_spec_validates_the_schema():
+    """Thieu truong phai lo ra o day, khong phai giua lan chay GPU 1 tieng."""
+    text = '{"object_prompt": "carpet", "defect_prompts": []}'
+
+    with pytest.raises(ValueError):
+        parse_spec(text, 'carpet')
 ```
 
 - [ ] **Step 3: Chay test, xac nhan FAIL**
@@ -746,25 +795,24 @@ Expected: FAIL voi `ModuleNotFoundError: No module named 'tools'`.
 - [ ] **Step 4: Viet `tools/gen_prompts.py`**
 
 ```python
-"""Sinh prompt spec bang LLM, mot lan, roi cache vao git.
+"""Sinh prompt spec bang VLM trong so mo chay cuc bo. Khong goi API ngoai.
 
 RANH GIOI RO RI DU LIEU (spec muc 5.5): script nay chi duoc doc `train` split.
-Ham train_image_paths hard-code duong dan `train/good` va co test chan moi duong
+train_image_paths hard-code duong dan `train/good` va co test chan moi duong
 khac. Khong cham anh test, khong cham ground-truth, khong cham anh anomaly. De
 lot la toan bo ket qua Phase A mat gia tri.
 
-Chay mot lan, output commit vao git - hoi dong tai lap duoc ma khong can API key.
+TAI LAP: greedy decoding (do_sample=False) tren trong so co dinh, nen cung
+MODEL_ID + cung prompt cho ra cung mot file JSON. MODEL_ID va revision duoc ghi
+vao output.
 """
 
 import argparse
-import base64
 import json
 import os
-from typing import List
+import re
 
-from pydantic import BaseModel, Field
-
-MODEL = 'gpt-5.6-luna'
+MODEL_ID = 'Qwen/Qwen2.5-VL-7B-Instruct'
 
 SPLIT_DIRS = {
     # Chi train/good. Cay thu muc cua ca hai dataset deu theo dang nay.
@@ -773,50 +821,40 @@ SPLIT_DIRS = {
 }
 
 SYSTEM = """You write text prompts for an open-vocabulary object detector \
-(Grounding DINO) that will be used to find manufacturing defects.
+(Grounding DINO) that finds manufacturing defects.
 
-The detector grounds short noun phrases in an image. Phrases that name a visible \
+The detector grounds short noun phrases in an image. Phrases naming a visible \
 defect appearance work; abstract quality judgements do not. Prefer two-to-three \
 word phrases naming what the defect looks like, not what caused it.
 
-Every prompt you emit costs one detector forward pass per image, so a short list \
-of precise phrases beats a long list of vague ones."""
+Every prompt costs one detector forward pass per image, so a short list of \
+precise phrases beats a long list of vague ones.
+
+Reply with one JSON object and nothing else."""
 
 USER_TEMPLATE = """Industrial anomaly detection, object category: {class_name}
 
-Produce a prompt spec for this category:
+Produce a JSON object with exactly these keys:
 
-- object_prompt: the noun the detector should use to find the object itself. \
-Bare noun, no article, no punctuation.
-- object_number: how many instances of that object appear in one image. Usually 1.
-- k_mask: how many candidate defect regions to keep per image. 5 is a reasonable default.
-- defect_area_threshold: the largest fraction of the object's area a single defect \
-may occupy, in (0, 1]. 0.9 is a reasonable default.
-- defect_prompts: the defect phrases. For each, `text` is the phrase given to the \
-detector, and `filter` is a phrase that means the object itself - a box matching \
-the filter is discarded as background, so it is normally the same as object_prompt.
+- "object_prompt": the noun the detector uses to find the object itself. Bare \
+noun, no article, no punctuation.
+- "object_number": integer, how many instances of that object appear in one image. \
+Usually 1.
+- "k_mask": integer, how many candidate defect regions to keep per image. Use 5.
+- "defect_area_threshold": float in (0, 1], the largest fraction of the object's \
+area one defect may occupy. Use 0.9.
+- "defect_prompts": a list of 2 to 5 objects, each with "text" (the phrase given \
+to the detector) and "filter" (a phrase meaning the object itself; boxes matching \
+it are dropped as background, so normally the same as object_prompt).
 
-Emit between two and five defect prompts. Fewer, more precise phrases are better \
-than a long list."""
-
-
-class DefectPrompt(BaseModel):
-    text: str = Field(description="Phrase given to the detector")
-    filter: str = Field(description="Phrase meaning the object itself; matching boxes are dropped")
-
-
-class PromptSpec(BaseModel):
-    object_prompt: str
-    object_number: int
-    k_mask: int
-    defect_area_threshold: float
-    defect_prompts: List[DefectPrompt]
+Reply with the JSON object only."""
 
 
 def train_image_paths(dataset, class_name, root, limit):
     """Duong dan anh trong train/good, da sap xep.
 
     CHI train split. Day la ranh gioi chong ro ri du lieu o spec muc 5.5.
+    Sap xep de greedy decoding tai lap duoc.
     """
     pattern = SPLIT_DIRS[dataset].format(class_name=class_name)
     directory = os.path.join(root, pattern)
@@ -830,41 +868,100 @@ def train_image_paths(dataset, class_name, root, limit):
     return [os.path.join(directory, n) for n in names[:limit]]
 
 
-def build_user_content(class_name, image_paths):
-    """Noi dung message theo Responses API. Anh dat TRUOC text."""
-    content = []
+def build_messages(class_name, n_images):
+    """Chat message. Anh dat TRUOC text; anh that truyen rieng cho processor."""
+    content = [{'type': 'image'} for _ in range(n_images)]
+    content.append({'type': 'text', 'text': USER_TEMPLATE.format(class_name=class_name)})
 
-    for path in image_paths:
-        with open(path, 'rb') as f:
-            data = base64.standard_b64encode(f.read()).decode('utf-8')
-        media_type = 'image/jpeg' if path.lower().endswith(('.jpg', '.jpeg')) else 'image/png'
-        content.append({
-            'type': 'input_image',
-            'image_url': f'data:{media_type};base64,{data}',
-        })
-
-    content.append({
-        'type': 'input_text',
-        'text': USER_TEMPLATE.format(class_name=class_name),
-    })
-    return content
+    return [
+        {'role': 'system', 'content': [{'type': 'text', 'text': SYSTEM}]},
+        {'role': 'user', 'content': content},
+    ]
 
 
-def generate_one(client, class_name, image_paths):
-    response = client.responses.parse(
-        model=MODEL,
-        instructions=SYSTEM,
-        input=[{'role': 'user', 'content': build_user_content(class_name, image_paths)}],
-        text_format=PromptSpec,
-    )
+def parse_spec(text, class_name):
+    """Boc JSON ra khoi output model va validate.
 
-    spec = response.output_parsed.model_dump()
+    Model trong so mo thuong boc JSON trong ```json ... ``` hoac them loi dan,
+    khac model co structured output cung buoc. Lay khoi { ... } dai nhat.
+    """
+    from SAA.prompts.llm_prompts import validate_spec
+
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if not match:
+        raise ValueError(f'khong tim thay JSON trong output cho {class_name}:\n{text[:400]}')
+
+    try:
+        spec = json.loads(match.group(0))
+    except json.JSONDecodeError as e:
+        raise ValueError(f'JSON hong cho {class_name}: {e}\n{match.group(0)[:400]}')
+
     spec['class'] = class_name
+    validate_spec(spec)
     return spec
 
 
+def build_model(load_in_4bit=True):
+    """Nap VLM. Lop Auto* tu tra ra lop dung tu config, khong phai doan ten."""
+    import torch
+    from transformers import AutoModelForImageTextToText, AutoProcessor, BitsAndBytesConfig
+
+    kwargs = {'device_map': 'auto'}
+    if load_in_4bit:
+        # 7B fp16 la ~15 GB, sat tran 16 GB cua T4. 4-bit xuong ~5 GB.
+        kwargs['quantization_config'] = BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16
+        )
+
+    processor = AutoProcessor.from_pretrained(MODEL_ID)
+    model = AutoModelForImageTextToText.from_pretrained(MODEL_ID, **kwargs)
+    model.eval()
+    return processor, model
+
+
+def generate_one(processor, model, class_name, image_paths, max_new_tokens=512, retries=3):
+    """Sinh spec cho mot class, thu lai neu JSON hong.
+
+    Greedy o lan dau de tai lap duoc. Thu lai thi noi thong bao loi vao prompt -
+    van greedy, nen chuoi thu lai cung tai lap duoc.
+    """
+    from PIL import Image
+
+    images = [Image.open(p).convert('RGB') for p in image_paths]
+    messages = build_messages(class_name, len(images))
+    last_error = None
+
+    for attempt in range(retries):
+        if last_error is not None:
+            messages = messages + [
+                {'role': 'assistant', 'content': [{'type': 'text', 'text': last_output}]},
+                {'role': 'user', 'content': [{'type': 'text', 'text':
+                    f'That was rejected: {last_error}. Reply with the JSON object only.'}]},
+            ]
+
+        text = processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        inputs = processor(
+            text=[text], images=images or None, return_tensors='pt'
+        ).to(model.device)
+
+        output = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+        last_output = processor.decode(
+            output[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True
+        )
+
+        try:
+            return parse_spec(last_output, class_name)
+        except ValueError as e:
+            last_error = str(e)
+            print(f'  thu lai {attempt + 1}/{retries}: {last_error[:120]}')
+
+    raise SystemExit(f'{class_name}: khong sinh duoc JSON hop le sau {retries} lan')
+
+
 def main():
-    parser = argparse.ArgumentParser(description='Sinh prompt spec bang LLM')
+    parser = argparse.ArgumentParser(description='Sinh prompt spec bang VLM cuc bo')
     parser.add_argument('--dataset', choices=sorted(SPLIT_DIRS), required=True)
     parser.add_argument('--variant', choices=['blind', 'vision'], required=True)
     parser.add_argument('--data-root', required=True,
@@ -872,18 +969,13 @@ def main():
     parser.add_argument('--out', required=True)
     parser.add_argument('--n-images', type=int, default=3,
                         help='So anh normal gui kem o variant vision')
+    parser.add_argument('--fp16', action='store_true',
+                        help='Nap fp16 thay vi 4-bit; can >16 GB VRAM')
     args = parser.parse_args()
-
-    from dotenv import load_dotenv
-    from openai import OpenAI
 
     from datasets import dataset_classes
 
-    load_dotenv()
-    if not os.environ.get('OPENAI_API_KEY'):
-        raise SystemExit('OPENAI_API_KEY chua co - dat trong .env')
-
-    client = OpenAI()
+    processor, model = build_model(load_in_4bit=not args.fp16)
     specs = []
 
     for class_name in dataset_classes[args.dataset]:
@@ -898,7 +990,7 @@ def main():
                     f'variant vision can anh, dung im lang bo qua'
                 )
 
-        spec = generate_one(client, class_name, image_paths)
+        spec = generate_one(processor, model, class_name, image_paths)
         print(f"{class_name}: {len(spec['defect_prompts'])} prompt  "
               f"{[p['text'] for p in spec['defect_prompts']]}")
         specs.append(spec)
@@ -906,6 +998,20 @@ def main():
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, 'w') as f:
         json.dump(specs, f, indent=2, ensure_ascii=False)
+
+    # Ghi provenance canh file JSON: hoi dong tai sinh duoc chinh xac file nay.
+    meta = {
+        'model_id': MODEL_ID,
+        'variant': args.variant,
+        'dataset': args.dataset,
+        'n_images': args.n_images if args.variant == 'vision' else 0,
+        'decoding': 'greedy (do_sample=False)',
+        'quantization': 'fp16' if args.fp16 else '4-bit nf4',
+        'system_prompt': SYSTEM,
+        'user_template': USER_TEMPLATE,
+    }
+    with open(args.out.replace('.json', '-meta.json'), 'w') as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
 
     total = sum(len(s['defect_prompts']) for s in specs)
     print(f'\n{len(specs)} class, {total} prompt, trung binh '
@@ -919,7 +1025,7 @@ if __name__ == '__main__':
 - [ ] **Step 5: Chay test, xac nhan PASS**
 
 Run: `.venv-test/bin/pytest tests/test_gen_prompts.py -v`
-Expected: PASS. Can `.venv-test/bin/pip install pydantic openai python-dotenv`.
+Expected: PASS. Test khong nap model nen chay duoc tren may khong co GPU.
 
 - [ ] **Step 6: Kiem tra ranh gioi ro ri bang grep**
 
@@ -927,22 +1033,14 @@ Expected: PASS. Can `.venv-test/bin/pip install pydantic openai python-dotenv`.
 grep -n "test\|ground_truth\|anomaly" tools/gen_prompts.py
 ```
 
-Moi lan xuat hien phai la trong comment hoac trong ten bien khong dan toi doc
-file. Co bat ky duong dan nao tro toi `test/` la **dung ngay**.
+Moi lan xuat hien phai la trong comment hoac ten bien khong dan toi doc file. Co
+bat ky duong dan nao tro toi `test/` la **dung ngay**.
 
-- [ ] **Step 7: Kiem tra khoa khong lot vao git**
-
-```bash
-git check-ignore -v .env          # phai in ra dong .gitignore khop
-git ls-files --error-unmatch .env # phai bao "did not match any file"
-grep -rn "sk-" tools/ SAA/prompts/generated/ 2>/dev/null || echo "khong co khoa trong ma nguon"
-```
-
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add tools/ tests/test_gen_prompts.py
-git commit -m "feat: generate prompt specs with an LLM, reading only the train split"
+git commit -m "feat: generate prompt specs with a local open-weight VLM"
 ```
 
 ---
@@ -952,12 +1050,11 @@ git commit -m "feat: generate prompt specs with an LLM, reading only the train s
 **Files:**
 - Create: `SAA/prompts/generated/*.json` (4 file)
 
-Chay tren may co API key. Khong can GPU.
+Chay tren Colab (can GPU de nap VLM). Khoang 15 phut moi file.
 
 - [ ] **Step 1: Sinh bon file**
 
 ```bash
-# OPENAI_API_KEY doc tu .env, khong can export
 
 python tools/gen_prompts.py --dataset mvtec --variant blind \
     --data-root /path/to/mvtec --out SAA/prompts/generated/mvtec-blind.json
@@ -969,7 +1066,12 @@ python tools/gen_prompts.py --dataset visa_public --variant vision \
     --data-root /path/to/visa --out SAA/prompts/generated/visa_public-vision.json
 ```
 
-27 class x 2 variant = 54 loi goi. Vai do la.
+27 class x 2 variant = 54 lan sinh. **Khong ton tien** - chay cuc bo.
+
+Chi phi GPU: nap model ~2 phut, moi class ~15-30 giay (them anh thi lau hon).
+Uoc **10-20 phut moi file**, ~1 gio cho ca bon.
+
+Model tai ve ~5 GB o 4-bit, cache lai giua cac lan chay trong cung session.
 
 - [ ] **Step 2: Ghi lai so prompt trung binh**
 
@@ -977,7 +1079,38 @@ Script in ra o dong cuoi. Ghi vao Notes cua plan nay — **day la con so quyet d
 muc tieu 2**. So luot DINO moi anh = `1 + so prompt`. Prompt thu cong cua tac gia
 cho MVTec la `3 general + K manual`; neu LLM sinh it hon thi toc do tang theo.
 
-- [ ] **Step 3: Kiem tra moi file nap duoc**
+- [ ] **Step 3: So voi prompt thu cong — kiem tra nhiem du lieu huan luyen**
+
+SAA+ la repo cong khai, paper dang IEEE. VLM co the da thay prompt cua tac gia.
+Neu P2 tien sat P3 mot cach dang ngo, do co the la **nho** chu khong phai suy.
+
+```bash
+.venv-test/bin/python - <<'PY'
+import json, sys
+sys.path.insert(0, '.')
+from SAA.prompts.mvtec_parameters import manual_prompts
+from SAA.prompts.llm_prompts import load_prompt_file
+
+gen = load_prompt_file('SAA/prompts/generated/mvtec-blind.json')
+exact = 0
+total = 0
+for cls, manual in manual_prompts.items():
+    manual_texts = {p[0].strip().lower().rstrip('.') for p in manual}
+    llm_texts = {p['text'].strip().lower().rstrip('.') for p in gen[cls]['defect_prompts']}
+    overlap = manual_texts & llm_texts
+    total += len(llm_texts)
+    exact += len(overlap)
+    if overlap:
+        print(f'{cls:12s} trung khit: {sorted(overlap)}')
+print(f'\n{exact}/{total} prompt trung khit tung chu voi prompt thu cong')
+PY
+```
+
+Ty le trung khit cao tren nhieu class la dau hieu nho. Trung y ma khac chu la
+suy that. **Ghi con so nay vao Notes va vao phan Limitations cua luan van** bat
+ke ket qua the nao — day la cau hoi hoi dong se hoi.
+
+- [ ] **Step 4: Kiem tra moi file nap duoc**
 
 ```bash
 .venv-test/bin/python -c "
@@ -993,7 +1126,7 @@ for p in sorted(glob.glob('SAA/prompts/generated/*.json')):
 `load_prompt_file` validate tung entry, nen loi schema lo ra o day chu khong
 phai giua lan chay 1 tieng.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add SAA/prompts/generated/
@@ -1142,8 +1275,10 @@ Muc tieu 2 khong co nguong chot truoc, vi no khong nam trong spec goc. Bao cao
 | Ro ri du lieu qua duong doc anh | `train_image_paths` hard-code `train/good`, co test chan. Grep truoc khi commit |
 | Confound dau phay lam sai lech so sanh P2-P3 | Lan chay doi chung P3-clean |
 | JSON sai schema, lo ra giua lan chay dai | `load_prompt_file` validate luc nap; Task 5 Step 3 kiem truoc khi chay |
-| Surface structured output cua `gpt-5.6-luna` khac du doan | Task 4 Step 1 probe mot lan goi truoc khi chay 54 |
-| Khoa API lot vao git | `.env` da gitignore (dong 107), chua track. Task 4 Step 7 kiem lai |
+| Lop `Auto*` khong nap duoc model, hoac chat template khac shape | Task 4 Step 1 probe truoc khi ton 15 phut GPU |
+| VLM tra ve JSON hong | `parse_spec` validate ngay; `generate_one` thu lai 3 lan, noi thong bao loi vao prompt |
+| 7B khong vua VRAM T4 | Mac dinh 4-bit (~5 GB). `--fp16` cho may >16 GB |
+| LLM da thay prompt tac gia trong du lieu huan luyen | So tung chu o Task 5 Step 3; ket qua vao Limitations |
 
 ## Notes
 
@@ -1152,5 +1287,6 @@ Dien trong luc thuc hien:
 - So prompt trung binh moi class, mvtec-blind: ___
 - So prompt trung binh moi class, mvtec-vision: ___
 - So prompt cua P3 (thu cong) de doi chieu: ___
-- Chi phi API thuc te: ___
+- Thoi gian sinh moi file tren T4: ___
+- So prompt trung khit tung chu voi prompt thu cong (Task 5 Step 3): ___
 - Prompt chet (0 box tren toan class): ___
