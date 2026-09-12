@@ -48,6 +48,8 @@ if __name__ == '__main__':
     sam_variant = os.environ.get('SAM_VARIANT') or 'vit_h'
     saliency_backbone = os.environ.get('SALIENCY_BACKBONE') or 'wide_resnet50'
     detector = os.environ.get('DETECTOR') or 'grounding_dino'
+    prompt_source = os.environ.get('PROMPT_SOURCE') or 'manual'
+    llm_prompt_file = os.environ.get('LLM_PROMPT_FILE') or None
     sam_checkpoint = os.environ.get('SAM_CHECKPOINT') or DEFAULT_SAM_CHECKPOINTS[sam_variant]
 
     # sam_variant va saliency_backbone NAM TRONG danh tinh: doi chung la con so
@@ -58,6 +60,8 @@ if __name__ == '__main__':
         'sam_variant': sam_variant,
         'saliency_backbone': saliency_backbone,
         'detector': detector,
+        'prompt_source': prompt_source,
+        'llm_prompt_file': llm_prompt_file,
     }
 
     for dataset in dataset_list:
@@ -95,9 +99,12 @@ if __name__ == '__main__':
                 '--saliency-backbone', run_identity['saliency_backbone'],
                 '--sam_checkpoint', sam_checkpoint,
                 '--detector', run_identity['detector'],
+                '--prompt-source', run_identity['prompt_source'],
                 '--gpu-id', str(gpu_indx),
                 '--vis', vis,
             ]
+            if run_identity['llm_prompt_file'] is not None:
+                cmd += ['--llm-prompt-file', run_identity['llm_prompt_file']]
             if run_identity['max_samples'] is not None:
                 cmd += ['--max-samples', str(run_identity['max_samples'])]
 

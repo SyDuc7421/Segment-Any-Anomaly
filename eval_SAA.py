@@ -164,15 +164,45 @@ def main(args):
         detector=kwargs['detector'],
     )
 
-    general_prompts = SegmentAnyAnomaly.build_general_prompts(kwargs['class_name'])
-    manual_promts = SegmentAnyAnomaly.manul_prompts[kwargs['dataset']][kwargs['class_name']]
+    # Thang so sanh o spec muc 5.6. Nhanh 'manual' la P3 va giu nguyen tung
+    # dong - moi con so baseline deu tu no.
+    prompt_source = kwargs['prompt_source']
+    class_name = kwargs['class_name']
+    dataset = kwargs['dataset']
 
-    textual_prompts = general_prompts + manual_promts
+    general_prompts = SegmentAnyAnomaly.build_general_prompts(class_name)
+
+    if prompt_source == 'manual':
+        manual_promts = SegmentAnyAnomaly.manul_prompts[dataset][class_name]
+        textual_prompts = general_prompts + manual_promts
+    elif prompt_source == 'general':
+        textual_prompts = general_prompts                 # P1: san co san
+    elif prompt_source == 'generic':
+        textual_prompts = [['defect.', class_name]]       # P0: san tuyet doi
+    else:
+        from SAA.prompts.llm_prompts import load_prompt_file, to_ensemble_prompts
+
+        specs = load_prompt_file(kwargs['llm_prompt_file'])
+        if class_name not in specs:
+            raise ValueError(
+                f"{kwargs['llm_prompt_file']} khong co class '{class_name}'. "
+                f"Co: {sorted(specs)}"
+            )
+        llm_spec = specs[class_name]
+        textual_prompts = to_ensemble_prompts(llm_spec)
+
+    # So prompt quyet dinh so luot goi DINO (1 object + len(textual_prompts)),
+    # ma DINO chiem 72% thoi gian - xem docs/report-phase-b.md muc 6b.
+    logger.info(f'prompt_source={prompt_source}, {len(textual_prompts)} prompt: '
+                f'{[p[0] for p in textual_prompts]}')
 
     model.set_ensemble_text_prompts(textual_prompts, verbose=False)
 
-    property_text_prompts = SegmentAnyAnomaly.property_prompts[kwargs['dataset']][kwargs['class_name']]
-    model.set_property_text_prompts(property_text_prompts, verbose=False)
+    if prompt_source == 'llm':
+        model.set_property_from_dict(llm_spec, verbose=False)
+    else:
+        property_text_prompts = SegmentAnyAnomaly.property_prompts[dataset][class_name]
+        model.set_property_text_prompts(property_text_prompts, verbose=False)
 
     model = model.to(device)
 
@@ -217,6 +247,8 @@ def main(args):
         'sam_variant': kwargs['sam_variant'],
         'saliency_backbone': kwargs['saliency_backbone'],
         'detector': kwargs['detector'],
+        'prompt_source': kwargs['prompt_source'],
+        'llm_prompt_file': kwargs['llm_prompt_file'],
         'cal_pro': kwargs['cal_pro'],
         'eval_resolution': kwargs['eval_resolution'],
         'box_threshold': kwargs['box_threshold'],
@@ -277,6 +309,11 @@ def get_args():
     parser.add_argument('--detector', type=str, default='grounding_dino',
                         choices=['grounding_dino', 'yolo_world', 'owlv2'],
                         help='Detector open-vocab. grounding_dino la baseline.')
+    parser.add_argument('--prompt-source', type=str, default='manual',
+                        choices=['manual', 'general', 'generic', 'llm'],
+                        help='manual=P3 (baseline), general=P1, generic=P0, llm=P2')
+    parser.add_argument('--llm-prompt-file', type=str, default=None,
+                        help='Duong dan JSON khi --prompt-source llm')
 
     args = parser.parse_args()
 

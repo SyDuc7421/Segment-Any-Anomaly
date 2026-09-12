@@ -174,6 +174,36 @@ class Model(torch.nn.Module):
                   f'{self.object_max_area}, '
                   f'{self.object_min_area}')
 
+    def set_property_from_dict(self, spec, verbose=False):
+        """Gan property prompt tu spec JSON thay vi tu chuoi.
+
+        Tuong duong set_property_text_prompts nhung khong dem chi so tu. Xem
+        spec muc 2.4: `property_prompts.split(' ')[7]` cho ra 'carpet,' dinh
+        dau phay - hanh vi baseline giu nguyen o nhanh manual, con nhanh nay
+        cho ra chuoi sach. Lan chay doi chung P3-clean ton tai de do rieng
+        anh huong cua dau phay.
+        """
+        from .prompts.llm_prompts import derive_property_fields
+
+        fields = derive_property_fields(spec)
+
+        # Gan tuong minh chu khong setattr trong vong lap: bay thuoc tinh nay
+        # phai khop voi set_property_text_prompts, va gan tuong minh thi doi
+        # chieu duoc bang AST. setattr lam phep kiem do mu.
+        self.object_prompt = fields['object_prompt']
+        self.object_number = fields['object_number']
+        self.k_mask = fields['k_mask']
+        self.defect_area_threshold = fields['defect_area_threshold']
+        self.object_max_area = fields['object_max_area']
+        self.object_min_area = fields['object_min_area']
+        self.similar = fields['similar']
+
+        if verbose:
+            print('used property prompts (from dict) ===')
+            for name, value in fields.items():
+                print(f'{name}: {value}')
+            print('=====================================')
+
     def ensemble_text_guided_mask_proposal(self, image, object_phrase_list, filtered_phrase_list,
                                            object_max_area, object_min_area,
                                            bbox_score_thr, text_score_thr):
