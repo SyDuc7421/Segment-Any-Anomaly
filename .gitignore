@@ -135,3 +135,6 @@ dmypy.json
 .serena/
 .venv-test/
 .DS_Store
+
+# Thu muc lam viec khi tai ket qua tu Drive ve; ban chinh thuc nam o results/*_full/
+/results/run_lite2/

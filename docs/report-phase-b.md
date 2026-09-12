@@ -1,7 +1,7 @@
 # Bao cao Phase B — SAA-Lite
 
 - **Ngay**: 2026-09-12
-- **Trang thai**: Buoc 0 va Buoc 1 hoan thanh. Buoc 2 dang chay.
+- **Trang thai**: Buoc 0, Buoc 1, Buoc 2 hoan thanh. Phase A chua bat dau.
 - **Phan cung**: Colab T4 (16 GB)
 - **Spec**: `docs/superpowers/specs/2026-08-28-saa-lite-llm-prompt-design.md`
 
@@ -21,15 +21,17 @@ nhan.
 **3. Cai dat max-F1-region trong repo goc khong khop dinh nghia ma paper phat
 bieu, va co the tra ve gia tri > 1.** Tai hien duoc bang mot vi du 5 dong.
 
-**4. Thay SAM bang MobileSAM: nhanh 2.05x, VRAM nho 3.75x, mat 7% `p_ap`.**
-Khong dat moc 3x cua spec muc 7, nhung da vat 90% du dia ly thuyet.
+**4. Thay SAM bang MobileSAM giu duoc gan nhu toan bo accuracy va nhanh gap
+doi.** Tren full test set: MVTec giu 97.8% `p_ap` va 99.3% `p_f1`, nhanh 2.07x;
+VisA thi lite2 con **tot hon** baseline (110.3% `p_ap`). Khong dat moc 3x cua
+spec muc 7, nhung da vat 90% du dia ly thuyet cua truc SAM.
 
 **5. Thay Grounding DINO bang YOLO-World hoac OWLv2: that bai hoan toan.** Ca
 hai vua kem chinh xac hon (con 4-16%) vua cham hon. Khong co diem Pareto.
 
-Ket luan chien luoc: sau khi thay SAM, **Grounding DINO chiem 90% thoi gian va
-khong thay the duoc**. Giam so luot goi DINO — tuc Phase A — la don bay toc do
-duy nhat con lai.
+Ket luan chien luoc: sau khi thay SAM, **Grounding DINO chiem 69-72% thoi gian
+va khong thay the duoc**. Giam so luot goi DINO — tuc Phase A — la don bay toc
+do duy nhat con lai.
 
 ---
 
@@ -266,6 +268,60 @@ ve tham so.
 
 ---
 
+## 6b. Buoc 2 — Full run lite2
+
+Cau hinh lite2 (MobileSAM + MobileNetV3 + Grounding DINO) tren toan bo 27 class.
+Chi tiet o `results/lite2_full/README.md`.
+
+| | MVTec baseline | MVTec lite2 | Giu | VisA baseline | VisA lite2 | Giu |
+|---|---|---|---|---|---|---|
+| `p_ap` | 28.86 | 28.24 | 97.8% | 22.07 | 24.35 | **110.3%** |
+| `p_f1` | 37.72 | 37.44 | 99.3% | 33.74 | 34.92 | **103.5%** |
+| `r_f1_fixed` | 21.92 | 21.25 | 96.9% | 11.78 | 11.78 | 100.0% |
+| `t_total` | 3994 | 1926 | **2.07x** | 4756 | 3110 | **1.53x** |
+| Full run | 1.91h | 0.92h | | 2.86h | 1.87h | |
+
+### Tieu chi spec muc 7
+
+`p_ap` va `p_f1` **dat** tren ca hai dataset. Toc do **khong dat** (2.07x va
+1.53x so voi moc 3x). Phuong an du phong da chot truoc khi chay: xuat bang
+Pareto va ket luan "SAA+ nen duoc toi dau truoc khi gay".
+
+### Ba dinh chinh cho ket luan Buoc 1
+
+Buoc 1 do tren mot class (`carpet`). Full run cho thay ca ba ket luan deu lech.
+
+**1. Tieu chi accuracy thuc ra DAT.** Buoc 1 bao 93.0% `p_ap`, truot moc 95%.
+Tren 15 class la 97.8%. `carpet` tinh co la class lite2 mat nhieu hon trung
+binh — uoc luong mot class da bi quan qua.
+
+**2. "DINO chiem 90%" chi dung voi `carpet`.**
+
+| | baseline | lite2 |
+|---|---|---|
+| `carpet` (Buoc 1) | 43% | 90% |
+| MVTec toan bo | 34% | 72% |
+| VisA toan bo | 40% | 69% |
+
+`t_sam` bien thien manh theo class: 98 ms o `carpet`, 788 ms o `pill`. Decoder
+SAM chay mot luot moi box, class nhieu vat the thi ton hon han.
+
+**3. VRAM giam it hon Buoc 1 tuong.** `carpet` cho 3.75x; full run cho 1.86x
+tren trung vi MVTec va 1.41x tren dinh. Dinh roi vao `pill`/`cable`/`pcb4`, noi
+so box chi phoi bo nho chu khong phai trong so encoder.
+
+### VisA: lite2 tot hon baseline
+
+`p_ap` 110.3%, `p_f1` 103.5%. Cung tap anh, cung seed, chi khac SAM va saliency.
+
+Gia thuyet: mask tho hon cua MobileSAM khop hon voi defect lon, mo ranh gioi.
+Xu huong nay cung thay tren MVTec o muc class (`zipper` +9.4%, `capsule` +7.1%,
+`cable` +5.9%), chi la tren VisA no du manh de lat ca trung binh. **Chua kiem
+chung** — muon khang dinh phai doi chieu kich thuoc defect trung binh tung class
+voi muc thay doi `p_f1`.
+
+---
+
 ## 7. Bang tong hop
 
 Tren `carpet`, 117 anh, T4.
@@ -278,11 +334,12 @@ Tren `carpet`, 117 anh, T4.
 | lite2_owlv2 | 4.59 | 9.22 | 3981.8 | 1.07x | 923.8 |
 | lite2_yolo | 1.60 | 3.15 | 5636.3 | 0.76x | 1950.4 |
 
-Full test set, baseline (dang chay lai voi lite2 o Buoc 2):
+Full test set:
 
 | | MVTec `p_f1` | MVTec `r_f1` | MVTec `r_f1_fixed` | VisA `p_f1` | VisA `r_f1` |
 |---|---|---|---|---|---|
 | baseline | 37.72 | 42.45 | 21.92 | 33.74 | 15.95 |
+| **lite2** | **37.44** | **37.09** | **21.25** | **34.92** | **14.54** |
 | paper | 39.40 | 49.67 | — | 27.07 | 14.46 |
 
 ---
@@ -292,7 +349,8 @@ Full test set, baseline (dang chay lai voi lite2 o Buoc 2):
 ### Da xac lap
 
 - Baseline tai lap duoc tren MVTec
-- MobileSAM la thay the tot: 2.05x nhanh hon, 3.75x it VRAM hon, mat 7% `p_ap`
+- MobileSAM la thay the tot: 2.07x nhanh hon tren MVTec, giu 97.8% `p_ap` va
+  99.3% `p_f1`; tren VisA con vuot baseline
 - Saliency backbone khong dang toi uu
 - Grounding DINO khong thay the duoc bang YOLO-World hay OWLv2
 - Cai dat max-F1-region goc co loi, da co ban dung ben canh
@@ -300,12 +358,13 @@ Full test set, baseline (dang chay lai voi lite2 o Buoc 2):
 ### Con mo
 
 - **VisA cao hon paper 24.6%** — phai tra loi truoc khi dua so VisA vao luan van
-- Buoc 2 dang chay: xac nhan lite2 tren ca 27 class
+- Vi sao lite2 **tot hon** baseline tren VisA — gia thuyet mask tho, chua kiem chung
 - Phase A chua bat dau
 
 ### Don bay con lai
 
-DINO chiem 90% va khong thay the duoc. `carpet` goi DINO 7 luot moi anh
+DINO chiem 72% tren MVTec (90% neu chi nhin `carpet`) va khong thay the duoc.
+`carpet` goi DINO 7 luot moi anh
 (`1 object + 3 general + 3 manual`), tuc **267 ms moi luot**.
 
 Neu Phase A sinh 3 prompt trung thay vi 6:
@@ -344,6 +403,7 @@ co do chua bao gio co tac dung.
 |---|---|
 | Baseline full-run | `results/baseline_full/` |
 | Profiling Buoc 1 | `results/profiling_step1/` |
+| Full-run lite2 (Buoc 2) | `results/lite2_full/` |
 | CSV tung cau hinh | Google Drive `SAA_results/prof_*/csv/` |
 | Notebook baseline | `demo/Benchmark_SAA.ipynb` |
 | Notebook profiling | `demo/Profiling_SAA_Lite.ipynb` |
