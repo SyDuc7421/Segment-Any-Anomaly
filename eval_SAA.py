@@ -189,6 +189,15 @@ def main(args):
 
     logger.info(f"\n")
 
+    # Prompt chet: cum tu ma detector khong nam duoc -> khong box nao song sot
+    # qua bo loc -> anomaly map rong. Spec muc 5.8 goi day la rui ro thuc te
+    # cua Phase A, va no cung lo ra khi doi detector.
+    if getattr(model, 'prompt_box_counts', None):
+        logger.info('=== so box song sot moi prompt (toan class) ===')
+        for phrase, (calls, total) in sorted(model.prompt_box_counts.items()):
+            mark = '  <-- PROMPT CHET' if total == 0 else ''
+            logger.info(f'{total:6d} box / {calls:4d} luot  "{phrase}"{mark}')
+
     for k, v in metrics.items():
         logger.info(f"{kwargs['class_name']}======={k}: {v:.2f}")
 

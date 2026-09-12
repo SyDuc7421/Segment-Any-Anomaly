@@ -102,6 +102,11 @@ class Model(torch.nn.Module):
         )
         self.last_timings = {}
 
+        # Dem so box song sot sau bo loc, theo tung prompt, cong don qua ca
+        # class. Prompt nao cho 0 box tren toan bo class la prompt chet - spec
+        # muc 5.8 va bang rui ro muc 8 yeu cau dua vao phan tich chu khong giau.
+        self.prompt_box_counts = {}
+
     def load_dino(self, model_config_path, model_checkpoint_path, device) -> torch.nn.Module:
         '''
 
@@ -206,6 +211,10 @@ class Model(torch.nn.Module):
                                                                                       filtered_phrase,
                                                                                       bbox_score_thr, text_score_thr,
                                                                                       object_max_area, object_min_area)
+            surviving = 0 if boxes_filtered is None else len(boxes_filtered)
+            calls, total = self.prompt_box_counts.get(object_phrase, (0, 0))
+            self.prompt_box_counts[object_phrase] = (calls + 1, total + surviving)
+
             ## in case there is no box left
             if boxes_filtered is not None:
                 ensemble_boxes += [boxes_filtered]
@@ -232,7 +241,11 @@ class Model(torch.nn.Module):
                 masks, logits = self.region_refine(ensemble_boxes, ensemble_logits, H, W)
 
         else:  # in case there is no box left
-            masks = [np.zeros((H, W), dtype=bool)]
+            # ndarray chu khong phai list: nhanh thanh cong tra ndarray, va
+            # visual_saliency_calculation index bang `masks[i, :, :]` nen list
+            # lam no gay TypeError. Duong DINO chua bao gio cham nhanh nay nen
+            # loi nam im tu truoc; detector khac lam no lo ra ngay.
+            masks = np.zeros((1, H, W), dtype=bool)
             logits = [0]
             max_box_area = 1
 
