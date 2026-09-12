@@ -2,9 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Thay tu dien prompt viet tay theo tung class bang prompt do LLM sinh
-ra, do khoang cach toi prompt cua tac gia goc, va do luon anh huong len toc do —
-vi so luot goi Grounding DINO ty le thuan voi so prompt.
+**Goal:** Cho LLM chon chien luoc prompt cho tung class, va do xem no co vuot
+duoc chuyen gia khong — tren ca hai truc `p_f1` va toc do.
+
+**Khung nay khac spec goc.** Spec dat cau hoi "LLM thu hep duoc bao nhieu khoang
+cach toi oracle P3?". Thang so sanh chay tren full MVTec
+(`results/phase_a_ladder/README.md`) bac bo gia dinh nen tang cua no: **P3 khong
+phai oracle**.
 
 **Architecture:** Nhanh song song, khong refactor. Duong `manual` hien tai giu
 nguyen tung dong. Prompt do LLM sinh di qua mot loader JSON moi va mot setter
@@ -19,33 +23,69 @@ chay cuc bo tren Colab, pytest. **Khong goi API ngoai.**
 **Bao cao Phase B:** `docs/report-phase-b.md` — doc muc 6b truoc, vi ket qua Phase
 B doi ban chat cua Phase A.
 
-## Vi sao Phase A gio co HAI muc tieu
+## Ba dieu thang so sanh da do, va chung doi khung Phase A
 
-Spec ban dau chi dat mot muc tieu: chung minh LLM thay duoc chuyen gia. Phase B
-them muc tieu thu hai, va no khong phai phat sinh — no la thu con lai sau khi
-loai tru bang thuc nghiem moi duong khac.
+Ba muc P0 / P1 / P3 chay duoc **khong can LLM**, tren full MVTec, truoc khi tieu
+GPU cho phan sinh prompt. Ket qua day du o `results/phase_a_ladder/README.md`.
 
-| Don bay toc do | Ket qua do duoc |
-|---|---|
-| Thay SAM (ViT-H -> MobileSAM) | 2.07x, da vat 90% du dia truc SAM |
-| Thay saliency backbone | 1% thoi gian, khong dang |
-| Thay detector (YOLO-World, OWLv2) | **That bai** — vua kem chinh xac hon vua cham hon |
-| **Giam so luot goi DINO** | **Chua do — duong duy nhat con lai** |
+### 1. So luot DINO ty le thuan voi so prompt — xac nhan
 
-DINO chiem 72% thoi gian tren MVTec va khong thay the duoc. So luot goi moi anh
-= `1 object + 3 general + K manual`. Class `carpet` co K=3 -> 7 luot, moi luot
-~267 ms.
+| Muc | Luot/anh | `t_dino` | ms/luot |
+|---|---|---|---|
+| P0 | 2.00 | 516.7 | 258.4 |
+| P1 | 4.00 | 1050.7 | 262.7 |
+| P3 | 5.20 | 1394.1 | 268.1 |
 
-Neu LLM sinh 3 prompt trung thay vi 6:
+On dinh tren 15 class. `t_dino` chi phu thuoc SO LUOT goi. P0 dat **2.62x** so
+voi P3 end-to-end.
+
+Don bay toc do la that. Va no la duong duy nhat con lai: thay SAM da vat 90% du
+dia, thay detector that bai (`results/profiling_step1/README.md`).
+
+### 2. P3 KHONG phai oracle
 
 ```
-4 luot x 267 = 1067 ms
-t_total ~ 1067 + 99 + 25 = 1191 ms
-speedup so baseline = 3.57x     <- vuot moc >= 3x ma Phase B khong voi toi
+P1 thang P3 tren 6/15 class: grid, leather, tile, wood, bottle, toothbrush
+texture   P3 - P1 = -1.07 diem     prompt thu cong LAM HAI
+object    P3 - P1 = +3.00 diem     prompt thu cong giup
 ```
 
-Day la uoc tinh, chua do. Nhung no la ly do Phase A phai **dem va bao cao so
-luot DINO**, khong chi bao cao accuracy.
+Prompt thu cong ma paper trinh bay nhu doi hoi kien thuc chuyen gia lai **lam
+hai** tren class texture. Co che: defect tren be mat van la "cho nao khac phan
+con lai", ma `"defect on carpet"` dien ta dung the.
+
+### 3. Khong nguon nao thong tri, va do la cho co dat
+
+```
+Nguon thang o tung class:   P0: 6 class   P1: 5 class   P3: 4 class
+
+pill    P0 63.94  vs  P3 44.89     generic hon 19 diem
+cable   P0 17.65  vs  P3 34.20     thu cong hon 18 diem
+```
+
+Chi can **chon dung mot trong ba chien luoc co san** cho tung class:
+
+```
+P3 (chuyen gia)              37.44
+chon tot nhat moi class      39.77      +2.33 diem
+```
+
+Khong viet mot prompt moi nao.
+
+### He qua
+
+| | Khung cu (spec) | Khung moi |
+|---|---|---|
+| Cau hoi | LLM thu hep khoang cach toi oracle? | LLM chon dung chien luoc cho tung class? |
+| Du dia | +1.64 diem (P1 -> P3) | **+2.33 diem tren ca P3** |
+| Tran | P3 | Chua biet — 39.77 chi la san |
+
+39.77 moi chi la chon giua ba thu co san. LLM sinh prompt rieng co the vuot xa
+hon, va cac class chon P0 con chay nhanh 2.62x.
+
+**LLM phai duoc cho biet ca hai truc.** Prompt he thong o Task 4 noi ro moi
+prompt ton mot luot DINO, de model can nhac danh doi thay vi liet ke cang nhieu
+cang tot.
 
 ## Global Constraints
 
@@ -1241,13 +1281,13 @@ Cau hinh lite2: MVTec 0.92h, VisA 1.87h (do o Buoc 2).
 
 | Muc | MVTec | VisA | Gio |
 |---|---|---|---|
-| P0 generic | 1 | — | 0.9 |
-| P1 general | 1 | — | 0.9 |
+| P0 generic | **da chay** | — | 0 |
+| P1 general | **da chay** | — | 0 |
 | P2-blind | 1 | 1 | 2.8 |
 | P2-vision | 1 | 1 | 2.8 |
 | P3 manual | **da co** | **da co** | 0 |
 | P3-clean (doi chung) | 1 | — | 0.9 |
-| | | | **≈ 8.3h** |
+| | | | **≈ 6.5h** |
 
 P0 va P1 chi chay MVTec (spec muc 6.3): chung chi dong vai moc san, mat mat
 khong dang ke.
@@ -1257,15 +1297,26 @@ moi lan chay va P3 da co san.
 
 ## Tieu chi thanh cong
 
-Spec muc 7, Phase A: **P2 vuot P1 ro ret tren da so class, va thu hep >= 50%
-khoang cach tu P1 toi P3.**
+Nguong cu cua spec muc 7 — "thu hep >= 50% khoang cach tu P1 toi P3" — **khong
+con dung**, vi no gia dinh P3 la tran. Khoang cach do chi +1.64 diem va P3 bi
+thua tren 6/15 class.
 
-Khong dat thi bao cao ket qua am kem phan tich class nao LLM truot va tai sao —
-van la mot chuong hop le. Bo dem `prompt_box_counts` (commit `2554aac`) in ra
-prompt nao cho 0 box tren toan class; do la du lieu cho phan phan tich do.
+Chot lai truoc khi chay, theo ba muc:
 
-Muc tieu 2 khong co nguong chot truoc, vi no khong nam trong spec goc. Bao cao
-`t_dino` va so prompt moi class, doi chieu voi P3.
+| Muc | Dat khi | Y nghia |
+|---|---|---|
+| Toi thieu | P2 >= P3 (37.44 `p_f1`) | LLM sanh duoc voi chuyen gia |
+| Muc tieu | P2 >= 39.77 | LLM bang cach chon tot nhat moi class |
+| Manh | P2 >= 39.77 **va** `t_total` < P3 | vuot chuyen gia tren CA HAI truc |
+
+Khong dat muc toi thieu thi bao cao ket qua am kem phan tich class nao LLM truot
+va tai sao. Bo dem `prompt_box_counts` (commit `2554aac`) in ra prompt nao cho 0
+box tren toan class — du lieu cho phan do.
+
+Ke ca khi P2 that bai hoan toan, **phat hien o thang so sanh da la mot dong gop
+doc lap**: prompt thu cong cua SAA+ thua generic tren 6/15 class va lam hai tren
+texture. Do la ket qua nham thang vao tien de cua paper goc, va no khong phu
+thuoc vao viec LLM lam duoc gi.
 
 ## Rui ro
 

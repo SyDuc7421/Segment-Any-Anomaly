@@ -1,7 +1,8 @@
 # Bao cao Phase B — SAA-Lite
 
 - **Ngay**: 2026-09-12
-- **Trang thai**: Buoc 0, Buoc 1, Buoc 2 hoan thanh. Phase A chua bat dau.
+- **Trang thai**: Buoc 0, Buoc 1, Buoc 2 hoan thanh. Phase A: thang so sanh
+  nguon prompt da chay (`results/phase_a_ladder/`), phan sinh prompt chua bat dau.
 - **Phan cung**: Colab T4 (16 GB)
 - **Spec**: `docs/superpowers/specs/2026-08-28-saa-lite-llm-prompt-design.md`
 
@@ -29,9 +30,15 @@ spec muc 7, nhung da vat 90% du dia ly thuyet cua truc SAM.
 **5. Thay Grounding DINO bang YOLO-World hoac OWLv2: that bai hoan toan.** Ca
 hai vua kem chinh xac hon (con 4-16%) vua cham hon. Khong co diem Pareto.
 
+**6. Prompt thu cong cua tac gia thua chien luoc generic tren 6/15 class**, va
+lam hai co he thong tren class texture. Chon dung nguon prompt cho tung class
+vuot chuyen gia 2.33 diem `p_f1` ma khong can viet prompt moi nao. Chi tiet o
+`results/phase_a_ladder/README.md`.
+
 Ket luan chien luoc: sau khi thay SAM, **Grounding DINO chiem 69-72% thoi gian
 va khong thay the duoc**. Giam so luot goi DINO — tuc Phase A — la don bay toc
-do duy nhat con lai.
+do duy nhat con lai, va thang so sanh da xac nhan `t_dino` ty le thuan voi so
+prompt (258-268 ms moi luot goi, on dinh tren 15 class).
 
 ---
 
@@ -354,12 +361,17 @@ Full test set:
 - Saliency backbone khong dang toi uu
 - Grounding DINO khong thay the duoc bang YOLO-World hay OWLv2
 - Cai dat max-F1-region goc co loi, da co ban dung ben canh
+- `t_dino` ty le thuan voi so luot goi DINO: 258-268 ms moi luot, on dinh tren
+  15 class va ba muc prompt khac nhau
+- Prompt thu cong khong phai tran: thua generic tren 6/15 class, lam hai tren
+  texture (-1.07 diem), giup tren object (+3.00 diem)
 
 ### Con mo
 
 - **VisA cao hon paper 24.6%** — phai tra loi truoc khi dua so VisA vao luan van
 - Vi sao lite2 **tot hon** baseline tren VisA — gia thuyet mask tho, chua kiem chung
-- Phase A chua bat dau
+- Vi sao `metal_nut` cho P1 == P3 chinh xac (36.13) — nghi prompt thu cong chet
+- Phase A: phan sinh prompt bang LLM chua bat dau
 
 ### Don bay con lai
 
@@ -367,17 +379,25 @@ DINO chiem 72% tren MVTec (90% neu chi nhin `carpet`) va khong thay the duoc.
 `carpet` goi DINO 7 luot moi anh
 (`1 object + 3 general + 3 manual`), tuc **267 ms moi luot**.
 
-Neu Phase A sinh 3 prompt trung thay vi 6:
+**Da do, khong con la uoc tinh.** Thang so sanh chay tren full MVTec:
 
-```
-4 luot x 267 = 1067 ms
-t_total ~ 1067 + 99 + 25 = 1191 ms
-speedup so baseline = 3.57x
-```
+| Muc | Luot DINO/anh | `t_total` | Nhanh hon P3 |
+|---|---|---|---|
+| P0 | 2.00 | 735 ms | **2.62x** |
+| P1 | 4.00 | 1505 ms | 1.28x |
+| P3 | 5.20 | 1926 ms | 1.00x |
 
-Vuot moc >= 3x ma Phase B mot minh khong voi toi. **Day la uoc tinh, chua do.**
-Nhung no cho thay hai phase ke chung mot cau chuyen thay vi la hai chuong roi
-rac, va no la ket qua cua viec da loai tru bang thuc nghiem moi kha nang khac.
+Giam so prompt keo `t_total` xuong dung nhu du doan. P0 dat 2.62x so voi P3 tren
+15 class (va 3.14x tren rieng `carpet` o lat cat dau).
+
+Nhung phat hien lon hon la **khong nguon prompt nao thong tri**: P0 thang 6
+class, P1 thang 5, P3 thang 4. Chon dung nguon cho tung class cho 39.77 `p_f1`,
+vuot P3 (37.44) 2.33 diem — ma khong viet mot prompt moi nao.
+
+Phase A vi vay doi khung: cau hoi khong con la "LLM thu hep duoc bao nhieu
+khoang cach toi oracle" (P3 khong phai oracle), ma la "LLM chon duoc chien luoc
+prompt dung cho tung class khong". Du dia lon hon, va no la mot dong gop nham
+thang vao tien de cua paper goc.
 
 ---
 
@@ -404,6 +424,7 @@ co do chua bao gio co tac dung.
 | Baseline full-run | `results/baseline_full/` |
 | Profiling Buoc 1 | `results/profiling_step1/` |
 | Full-run lite2 (Buoc 2) | `results/lite2_full/` |
+| Thang nguon prompt (Phase A so bo) | `results/phase_a_ladder/` |
 | CSV tung cau hinh | Google Drive `SAA_results/prof_*/csv/` |
 | Notebook baseline | `demo/Benchmark_SAA.ipynb` |
 | Notebook profiling | `demo/Profiling_SAA_Lite.ipynb` |
