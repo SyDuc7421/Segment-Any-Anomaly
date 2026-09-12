@@ -54,3 +54,24 @@ def test_metric_cal_computes_r_f1_when_pro_enabled(monkeypatch):
 
     assert result['r_f1'] == pytest.approx(100.0)
     assert result['p_pro'] == pytest.approx(50.0)
+
+
+def test_normalize_returns_zeros_for_a_constant_map():
+    """max == min chia cho 0 -> NaN toan bo -> metric_cal gay.
+
+    Xay ra that khi detector khong do duoc gi tren ca class.
+    """
+    from utils.eval_utils import normalize
+
+    out = normalize(np.full((3, 8, 8), 7.0))
+
+    assert not np.isnan(out).any()
+    assert (out == 0).all()
+
+
+def test_normalize_still_scales_a_normal_map():
+    from utils.eval_utils import normalize
+
+    out = normalize(np.array([2.0, 4.0, 6.0]))
+
+    assert out == pytest.approx([0.0, 0.5, 1.0])

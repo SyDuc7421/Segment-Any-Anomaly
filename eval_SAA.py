@@ -64,6 +64,15 @@ def eval(
             similarity_map = appendix['similarity_map']
             similarity_maps.append(similarity_map)
 
+    # Bao cao NGAY sau vong lap anh, truoc khi tinh metric: neu detector khong
+    # do duoc gi thi metric_cal se gay, va day dung la luc can biet tai sao.
+    # Prompt nao cho 0 box tren toan class la prompt chet (spec muc 5.8).
+    if getattr(model, 'prompt_box_counts', None):
+        logger.info('=== so box song sot moi prompt (toan class) ===')
+        for phrase, (calls, total) in sorted(model.prompt_box_counts.items()):
+            mark = '  <-- PROMPT CHET' if total == 0 else ''
+            logger.info(f'{total:6d} box / {calls:4d} luot  "{phrase}"{mark}')
+
     test_imgs, scores, gt_mask_list = specify_resolution(
         test_imgs, scores, gt_mask_list,
         resolution=(resolution, resolution)
@@ -188,15 +197,6 @@ def main(args):
     )
 
     logger.info(f"\n")
-
-    # Prompt chet: cum tu ma detector khong nam duoc -> khong box nao song sot
-    # qua bo loc -> anomaly map rong. Spec muc 5.8 goi day la rui ro thuc te
-    # cua Phase A, va no cung lo ra khi doi detector.
-    if getattr(model, 'prompt_box_counts', None):
-        logger.info('=== so box song sot moi prompt (toan class) ===')
-        for phrase, (calls, total) in sorted(model.prompt_box_counts.items()):
-            mark = '  <-- PROMPT CHET' if total == 0 else ''
-            logger.info(f'{total:6d} box / {calls:4d} luot  "{phrase}"{mark}')
 
     for k, v in metrics.items():
         logger.info(f"{kwargs['class_name']}======={k}: {v:.2f}")

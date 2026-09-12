@@ -22,7 +22,15 @@ def normalize(scores):
     max_value = np.max(scores)
     min_value = np.min(scores)
 
-    norml_scores = (scores - min_value) / (max_value - min_value)
+    # Map hang so (max == min) chia cho 0 -> NaN toan bo -> metric_cal gay voi
+    # "Input contains NaN". Xay ra khi detector khong dò duoc gi tren ca class,
+    # tuc anomaly map rong o moi anh. Tra ve 0 la cau tra loi dung cho map hang
+    # so, va no cho ra mot hang ket qua that (AUC ~ 0.5) thay vi mot vet crash.
+    value_range = max_value - min_value
+    if value_range == 0:
+        return np.zeros_like(scores, dtype=float)
+
+    norml_scores = (scores - min_value) / value_range
     return norml_scores
 
 def save_single_result(classification_score, segmentation_score, root_dir, shot_name, experiment_indx, subset_name, defect_type, name, use_defect_type):

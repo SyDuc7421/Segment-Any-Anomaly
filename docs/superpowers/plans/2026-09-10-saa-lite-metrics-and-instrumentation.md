@@ -76,7 +76,7 @@ Máy phát triển không cần có `torch` — các test ở Task 2, 3, 6 chỉ
 ```bash
 python3 -m venv .venv-test
 .venv-test/bin/pip install --upgrade pip
-.venv-test/bin/pip install pytest numpy scikit-learn scikit-image pandas
+.venv-test/bin/pip install pytest numpy scikit-learn scikit-image pandas opencv-python-headless
 ```
 
 Venv này cố ý **không** cài `torch`. Nó chỉ dùng để chạy test logic thuần. Việc chạy pipeline thật vẫn diễn ra trên Colab với môi trường đầy đủ theo `install.sh`.
