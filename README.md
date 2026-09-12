@@ -11,6 +11,94 @@ SAA+ aims to segment any anomaly without the need for training. We achieve this 
 namely [Grounding DINO](https://github.com/IDEA-Research/GroundingDINO) and 
 [Segment Anything](https://github.com/facebookresearch/segment-anything), with hybrid prompt regularization.
 
+---
+
+# Fork: SAA-Lite
+
+> Phan nay la **cong viec cua fork**, khong phai cua tac gia goc. Toan bo README
+> ban goc nam nguyen ben duoi.
+
+Do xem SAA+ nen duoc toi dau truoc khi gay: thay tung module nang bang module
+nhe, va do danh doi accuracy / toc do / VRAM tren full test set.
+
+## Ket qua chinh
+
+Cau hinh **lite2** = MobileSAM + MobileNetV3, giu nguyen Grounding DINO.
+Full test set, Colab T4.
+
+| | MVTec (15 class, 1725 anh) | | VisA (12 class, 2162 anh) | |
+|---|---|---|---|---|
+| | baseline | lite2 | baseline | lite2 |
+| max-F1-pixel | 37.72 | **37.44** (99.3%) | 33.74 | **34.92** (103.5%) |
+| `p_ap` | 28.86 | 28.24 (97.8%) | 22.07 | 24.35 (110.3%) |
+| ms/anh | 3994 | **1926** (2.07x) | 4756 | **3110** (1.53x) |
+| Full run | 1.91h | 0.92h | 2.86h | 1.87h |
+
+Accuracy giu duoc gan nhu nguyen ven; tren VisA con vuot baseline. Toc do gap
+doi, nhung khong dat moc 3x — tran ly thuyet cua truc SAM chi la 2.28x.
+
+## Bon phat hien
+
+**1. SAM khong phai nut co chai, Grounding DINO moi la.** Thay SAM ViT-H bang
+MobileSAM lam tang toc tang do 23x (2295 -> 99 ms) nhung end-to-end chi 2.07x,
+vi DINO khong doi. Sau khi thay, ty trong DINO tang tu 34% len 72%.
+
+**2. Grounding DINO khong thay the duoc.** Thu YOLO-World va OWLv2: ca hai vua
+kem chinh xac hon (con 4-16% `p_ap`) vua **cham hon**. Chung duoc huan luyen de
+do danh tu vat the, khong do cum mo ta khuyet tat nhu `"black hole"`, `"thread"`.
+
+**3. Cai dat max-F1-region trong repo goc khong khop dinh nghia ma paper phat
+bieu, va co the tra ve gia tri > 1** (class `wood` ra 122.57). Tai hien duoc
+bang mot vi du 5 dong. Fork nay bao cao ca hai cot: `r_f1` (ban goc, de so voi
+bang da cong bo) va `r_f1_fixed` (dung dinh nghia).
+
+**4. Chon cau hinh bang mot class la rui ro.** Profiling tren rieng `carpet` cho
+93.0% `p_ap` — truot nguong 95%. Tren ca 15 class la 97.8% — dat. Ba ket luan
+rut ra tu mot class deu lech khi kiem lai tren full test set.
+
+## Bo sung vao ma nguon
+
+| | |
+|---|---|
+| `r_f1`, `r_f1_fixed` | max-F1-region: bat ham co san nhung bi tat, va them ban cai dung dinh nghia |
+| `t_dino`, `t_sam`, `t_saliency`, `t_total` | Latency tach theo giai doan, co `torch.cuda.synchronize` truoc moi lan doc dong ho |
+| `peak_vram`, `n_images` | Ghi kem moi ket qua |
+| `--sam-variant`, `--saliency-backbone`, `--detector` | Hoan doi backbone tu dong lenh |
+| Resume theo class | Doi chieu `run_meta.json` truoc khi bo qua, nen ket qua chay subset khong bi nham la full |
+| `tests/` | 64 test (repo goc khong co test nao) |
+
+Mac dinh cua moi tham so moi tai tao dung hanh vi cu, nen baseline giu bit-exact.
+
+## Tai lieu
+
+| | |
+|---|---|
+| Bao cao tong hop | [`docs/report-phase-b.md`](docs/report-phase-b.md) |
+| Baseline full-run | [`results/baseline_full/`](results/baseline_full/) |
+| Profiling Buoc 1 | [`results/profiling_step1/`](results/profiling_step1/) |
+| Full-run lite2 | [`results/lite2_full/`](results/lite2_full/) |
+| Thiet ke | [`docs/superpowers/specs/`](docs/superpowers/specs/) |
+
+Notebook Colab: `demo/Benchmark_SAA.ipynb` (baseline), `demo/Profiling_SAA_Lite.ipynb`
+(Buoc 1), `demo/Benchmark_SAA_Lite2.ipynb` (Buoc 2).
+
+## Hai cau hoi con mo
+
+- **VisA cao hon paper 24.6%** o lan chay baseline. Pipeline deterministic nen
+  day khong phai nhieu. Chua dua so VisA vao ket luan tai lap cho toi khi tra
+  loi duoc — nghi split hoac subset khac.
+- **lite2 tot hon baseline tren VisA.** Gia thuyet: mask tho hon cua MobileSAM
+  khop hon voi defect lon, mo ranh gioi. Chua kiem chung.
+
+## Tiep theo
+
+Phase A — cho LLM sinh prompt thay cho tu dien viet tay theo tung class. Sau
+Phase B thi no khong con chi la chuyen accuracy: DINO chiem 72% va so luot goi
+DINO ty le thuan voi so prompt, nen **giam so prompt la don bay toc do duy nhat
+con lai**.
+
+---
+
 ## :fire:What's New
 
 - We have added a [Huggingface demo](https://huggingface.co/spaces/Caoyunkang/Segment-Any-Anomaly). Enjoy it~
