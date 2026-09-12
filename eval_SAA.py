@@ -152,6 +152,7 @@ def main(args):
         device=kwargs['device'],
         sam_variant=kwargs['sam_variant'],
         saliency_backbone=kwargs['saliency_backbone'],
+        detector=kwargs['detector'],
     )
 
     general_prompts = SegmentAnyAnomaly.build_general_prompts(kwargs['class_name'])
@@ -206,6 +207,7 @@ def main(args):
         'max_samples': kwargs['max_samples'],
         'sam_variant': kwargs['sam_variant'],
         'saliency_backbone': kwargs['saliency_backbone'],
+        'detector': kwargs['detector'],
         'cal_pro': kwargs['cal_pro'],
         'eval_resolution': kwargs['eval_resolution'],
         'box_threshold': kwargs['box_threshold'],
@@ -263,6 +265,9 @@ def get_args():
     parser.add_argument('--saliency-backbone', type=str, default='wide_resnet50',
                         choices=['wide_resnet50', 'mobilenetv3'],
                         help='ImageNet backbone cho saliency. wide_resnet50 la baseline.')
+    parser.add_argument('--detector', type=str, default='grounding_dino',
+                        choices=['grounding_dino', 'yolo_world', 'owlv2'],
+                        help='Detector open-vocab. grounding_dino la baseline.')
 
     args = parser.parse_args()
 

@@ -47,6 +47,7 @@ if __name__ == '__main__':
     # csv_path khong mang danh tinh cau hinh nen dung chung la ghi de len nhau.
     sam_variant = os.environ.get('SAM_VARIANT') or 'vit_h'
     saliency_backbone = os.environ.get('SALIENCY_BACKBONE') or 'wide_resnet50'
+    detector = os.environ.get('DETECTOR') or 'grounding_dino'
     sam_checkpoint = os.environ.get('SAM_CHECKPOINT') or DEFAULT_SAM_CHECKPOINTS[sam_variant]
 
     # sam_variant va saliency_backbone NAM TRONG danh tinh: doi chung la con so
@@ -56,6 +57,7 @@ if __name__ == '__main__':
         'cal_pro': cal_pro.lower() in ('yes', 'true', 't', '1'),
         'sam_variant': sam_variant,
         'saliency_backbone': saliency_backbone,
+        'detector': detector,
     }
 
     for dataset in dataset_list:
@@ -92,6 +94,7 @@ if __name__ == '__main__':
                 '--sam-variant', run_identity['sam_variant'],
                 '--saliency-backbone', run_identity['saliency_backbone'],
                 '--sam_checkpoint', sam_checkpoint,
+                '--detector', run_identity['detector'],
                 '--gpu-id', str(gpu_indx),
                 '--vis', vis,
             ]

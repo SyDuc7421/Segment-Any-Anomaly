@@ -9,6 +9,7 @@ from GroundingDINO.groundingdino.models import build_model
 from GroundingDINO.groundingdino.util.slconfig import SLConfig
 from GroundingDINO.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 from .backbones import build_sam_predictor, build_saliency_extractor
+from .detectors import QUERY_SCORED, build_detector, split_phrase
 from utils.timing import StageTimer
 
 
@@ -30,6 +31,7 @@ class Model(torch.nn.Module):
                  device='cuda',
                  sam_variant='vit_h',
                  saliency_backbone='wide_resnet50',
+                 detector='grounding_dino',
 
                  ):
         '''
@@ -56,7 +58,19 @@ class Model(torch.nn.Module):
         super(Model, self).__init__()
 
         # Build Model
-        self.anomaly_region_generator = self.load_dino(dino_config_file, dino_checkpoint, device=device)
+        # grounding_dino giu nguyen duong cu tung dong: baseline phai tai lap
+        # bit-exact (spec muc 3). Detector khac di qua nhanh song song
+        # query_detector_proposal, khong dung toi bbox_suppression.
+        self.detector_name = detector
+        self.anomaly_region_generator = None
+        self.query_detector = None
+
+        if detector == 'grounding_dino':
+            self.anomaly_region_generator = self.load_dino(
+                dino_config_file, dino_checkpoint, device=device
+            )
+        else:
+            self.query_detector = build_detector(detector, device)
         self.anomaly_region_refiner = build_sam_predictor(sam_variant, sam_checkpoint, device)
 
         self.transform = T.Compose(
@@ -178,14 +192,20 @@ class Model(torch.nn.Module):
 
         for object_phrase, filtered_phrase in zip(object_phrase_list, filtered_phrase_list):
 
-            ########## language prompts for region proposal
-            boxes, logits, object_phrase = self.text_guided_region_proposal(dino_image, object_phrase)
+            if self.detector_name in QUERY_SCORED:
+                boxes_filtered, logits_filtered, pred_phrases = self.query_detector_proposal(
+                    image, object_phrase, filtered_phrase,
+                    bbox_score_thr, object_max_area, object_min_area
+                )
+            else:
+                ########## language prompts for region proposal
+                boxes, logits, object_phrase = self.text_guided_region_proposal(dino_image, object_phrase)
 
-            ########## property prompts for region filter
-            boxes_filtered, logits_filtered, pred_phrases = self.bbox_suppression(boxes, logits, object_phrase,
-                                                                                  filtered_phrase,
-                                                                                  bbox_score_thr, text_score_thr,
-                                                                                  object_max_area, object_min_area)
+                ########## property prompts for region filter
+                boxes_filtered, logits_filtered, pred_phrases = self.bbox_suppression(boxes, logits, object_phrase,
+                                                                                      filtered_phrase,
+                                                                                      bbox_score_thr, text_score_thr,
+                                                                                      object_max_area, object_min_area)
             ## in case there is no box left
             if boxes_filtered is not None:
                 ensemble_boxes += [boxes_filtered]
@@ -217,6 +237,50 @@ class Model(torch.nn.Module):
             max_box_area = 1
 
         return masks, logits, max_box_area
+
+    def query_detector_proposal(self, image, phrase, filtered_phrase,
+                                score_thr, object_max_area, object_min_area):
+        """Duong cho detector tra diem theo query (YOLO-World, OWLv2).
+
+        Tra ve dung bo ba ma bbox_suppression tra: (boxes_filtered,
+        logits_filtered, pred_phrases). boxes_filtered la tensor cxcywh CHUAN
+        HOA tren device - phia sau tinh dien tich roi moi denormalize.
+
+        Lam dung nhung viec bbox_suppression lam, bang cung cong thuc:
+        loc dien tich, va loc nen theo filtered_phrase. Bo qua text_score_thr
+        vi detector loai nay khong co diem theo token de nguong.
+        """
+        terms = split_phrase(phrase)
+
+        with self.timer.stage('dino'):
+            boxes, scores, phrases = self.query_detector.detect(image, terms, score_thr)
+
+        boxes_filtered = []
+        logits_filtered = []
+        pred_phrases = []
+
+        for box, score, matched_phrase in zip(boxes, scores, phrases):
+            box_area = box[2] * box[3]
+
+            if not (object_min_area < box_area < object_max_area):
+                continue
+
+            # strategy5 tuong duong: bo box khop voi nen thay vi voi defect
+            if matched_phrase.count(filtered_phrase) > 0:
+                continue
+
+            boxes_filtered.append(box)
+            logits_filtered.append(score)
+            pred_phrases.append(f'{matched_phrase}({str(score)[:4]})')
+
+        if not boxes_filtered:
+            return None, None, None
+
+        boxes_filtered = torch.as_tensor(
+            boxes_filtered, dtype=torch.float32, device=self.device
+        )
+
+        return boxes_filtered, logits_filtered, pred_phrases
 
     def text_guided_region_proposal(self, dino_image, object_phrase):
         # directly use the output of Grounding DINO
