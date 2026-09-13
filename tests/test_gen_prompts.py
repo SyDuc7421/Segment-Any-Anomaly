@@ -130,3 +130,20 @@ def test_parse_spec_validates_the_schema():
     """Thieu truong phai lo ra o day, khong phai giua lan chay GPU."""
     with pytest.raises(ValueError):
         gp.parse_spec('{"object_prompt": "carpet", "defect_prompts": []}', 'carpet')
+
+
+def test_dataset_class_names_needs_no_heavy_import():
+    """Chay duoc tren venv khong co torch/loguru/cv2.
+
+    `import datasets` se an phai package cua HuggingFace (transformers keo ve),
+    va `datasets/__init__.py` cua repo lai keo theo torch/loguru/cv2. Nap thang
+    datasets/mvtec.py tranh ca hai - file do chi import glob va os.
+    """
+    assert len(gp.dataset_class_names('mvtec')) == 15
+    assert len(gp.dataset_class_names('visa_public')) == 12
+
+
+def test_dataset_class_names_starts_with_the_texture_classes():
+    """Thu tu quyet dinh thu tu sinh prompt, va greedy decoding chi tai lap
+    duoc neu thu tu on dinh."""
+    assert gp.dataset_class_names('mvtec')[:2] == ['carpet', 'grid']

@@ -134,6 +134,38 @@ def parse_spec(text, class_name):
     return spec
 
 
+CLASS_LIST_MODULES = {
+    'mvtec': ('mvtec.py', 'mvtec_classes'),
+    'visa_public': ('visa_public.py', 'visa_public_classes'),
+}
+
+
+def dataset_class_names(dataset):
+    """Ten class cua dataset, doc thang tu file module trong repo.
+
+    Hai cai bay tranh duoc bang cach nap theo duong dan thay vi `import datasets`:
+
+    1. Repo co thu muc `datasets/` trung ten voi package `datasets` cua
+       HuggingFace, ma transformers keo ve. Chay `python tools/gen_prompts.py`
+       thi sys.path[0] la thu muc tools/, KHONG phai repo root, nen
+       `import datasets` an phai ban HF va bao "cannot import name
+       'dataset_classes'".
+    2. `datasets/__init__.py` keo theo loguru, torch va cv2. Notebook sinh prompt
+       khong can thu nao trong so do - `datasets/mvtec.py` chi import glob va os,
+       va danh sach class la mot list thuan.
+    """
+    import importlib.util
+
+    filename, attr = CLASS_LIST_MODULES[dataset]
+    path = os.path.join(_REPO_ROOT, 'datasets', filename)
+
+    spec = importlib.util.spec_from_file_location(f'repo_{dataset}', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    return getattr(module, attr)
+
+
 def build_model(model_id, load_in_4bit=True):
     """Nap VLM. Lop Auto* tu tra ra lop dung tu config, khong phai doan ten."""
     import torch
@@ -216,15 +248,18 @@ def main():
                              'bitsandbytes; can ~15 GB VRAM cho ban 7B, ~6 GB cho 3B.')
     args = parser.parse_args()
 
-    from datasets import dataset_classes
-
     if args.variant == 'vision' and not args.data_root:
         raise SystemExit('--variant vision can --data-root de doc anh train/good')
 
+    # Nap model TRUOC khi cham vao `datasets`: build_model import transformers
+    # xong roi thi viec chen repo root len sys.path khong con che duoc gi cua no.
     processor, model = build_model(args.model, load_in_4bit=not args.fp16)
+
+    class_names = dataset_class_names(args.dataset)
+    print(f'{len(class_names)} class: {list(class_names)}\n')
     specs = []
 
-    for class_name in dataset_classes[args.dataset]:
+    for class_name in class_names:
         image_paths = []
         if args.variant == 'vision':
             image_paths = train_image_paths(
