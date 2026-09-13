@@ -1,0 +1,296 @@
+[
+  {
+    "reason": "This category requires multiple defect phrases because the defects are subtle and may not be immediately apparent.",
+    "defect_prompts": [
+      {
+        "text": "missing piece",
+        "filter": "carpet"
+      },
+      {
+        "text": "stain",
+        "filter": "carpet"
+      },
+      {
+        "text": "crack",
+        "filter": "carpet"
+      },
+      {
+        "text": "scratch",
+        "filter": "carpet"
+      }
+    ],
+    "object_prompt": "carpet",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "carpet"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the grid pattern is uniform, and any deviation from the grid would be considered a defect.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "grid"
+      },
+      {
+        "text": "missing piece",
+        "filter": "grid"
+      }
+    ],
+    "object_prompt": "grid",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "grid"
+  },
+  {
+    "reason": "This category, leather, typically shows minor imperfections such as scratches, stains, or small holes. These defects are subtle and do not significantly alter the overall appearance.",
+    "defect_prompts": [
+      {
+        "text": "scratch",
+        "filter": "leather"
+      },
+      {
+        "text": "stain",
+        "filter": "leather"
+      },
+      {
+        "text": "hole",
+        "filter": "leather"
+      }
+    ],
+    "object_prompt": "leather",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "leather"
+  },
+  {
+    "reason": "This category appears to have multiple distinct defect appearances, such as rust spots, scratches, and stains. Each of these requires its own unique phrase to accurately detect.",
+    "defect_prompts": [
+      {
+        "text": "rust spot",
+        "filter": "tile"
+      },
+      {
+        "text": "scratch",
+        "filter": "tile"
+      },
+      {
+        "text": "stain",
+        "filter": "tile"
+      }
+    ],
+    "object_prompt": "tile",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "tile"
+  },
+  {
+    "reason": "This category, 'wood', typically has a single defect that is a small, irregular stain or spot. The defect is not easily identifiable by its name alone.",
+    "defect_prompts": [
+      {
+        "text": "rusty",
+        "filter": "wood"
+      },
+      {
+        "text": "scratch",
+        "filter": "wood"
+      },
+      {
+        "text": "stain",
+        "filter": "wood"
+      },
+      {
+        "text": "bent part",
+        "filter": "wood"
+      }
+    ],
+    "object_prompt": "wood",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "wood"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the defect is a hole, which is a common and easily identifiable issue.",
+    "defect_prompts": [
+      {
+        "text": "hole",
+        "filter": "bottle"
+      },
+      {
+        "text": "crack",
+        "filter": "bottle"
+      }
+    ],
+    "object_prompt": "bottle",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "bottle"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the defects are visually different: a missing piece and a stain.",
+    "defect_prompts": [
+      {
+        "text": "missing piece",
+        "filter": "cable"
+      },
+      {
+        "text": "stain",
+        "filter": "cable"
+      }
+    ],
+    "object_prompt": "cable",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "cable"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the defect '500' is a specific number printed on the capsule, which is a clear and distinct appearance.",
+    "defect_prompts": [
+      {
+        "text": "500",
+        "filter": "capsule"
+      },
+      {
+        "text": "capsule",
+        "filter": "capsule"
+      }
+    ],
+    "object_prompt": "capsule",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "capsule"
+  },
+  {
+    "reason": "This category, hazelnut, has two distinct defect appearances: a rust spot and a missing piece.",
+    "defect_prompts": [
+      {
+        "text": "rust spot",
+        "filter": "hazelnut"
+      },
+      {
+        "text": "missing piece",
+        "filter": "hazelnut"
+      }
+    ],
+    "object_prompt": "hazelnut",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "hazelnut"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the nut appears to be deformed but not visibly damaged.",
+    "defect_prompts": [
+      {
+        "text": "cracked",
+        "filter": "metal_nut"
+      },
+      {
+        "text": "deformed",
+        "filter": "metal_nut"
+      }
+    ],
+    "object_prompt": "nut",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "metal_nut"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the red spots and the letter 'F' are different types of defects.",
+    "defect_prompts": [
+      {
+        "text": "red spots",
+        "filter": "pill"
+      },
+      {
+        "text": "letter F",
+        "filter": "pill"
+      }
+    ],
+    "object_prompt": "pill",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "pill"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because screws can have different types of defects such as rust spots, stripped threads, or bent heads.",
+    "defect_prompts": [
+      {
+        "text": "rust spot",
+        "filter": "screw"
+      },
+      {
+        "text": "bent head",
+        "filter": "screw"
+      }
+    ],
+    "object_prompt": "screw",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "screw"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the defects are visually similar.",
+    "defect_prompts": [
+      {
+        "text": "cracked bristles",
+        "filter": "toothbrush"
+      },
+      {
+        "text": "stained bristles",
+        "filter": "toothbrush"
+      }
+    ],
+    "object_prompt": "toothbrush",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "toothbrush"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the defects are visually similar.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "transistor"
+      },
+      {
+        "text": "stain",
+        "filter": "transistor"
+      }
+    ],
+    "object_prompt": "transistor",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "transistor"
+  },
+  {
+    "reason": "This category requires two distinct defect appearances because the defect is a small, irregular mark that could be mistaken for a normal variation.",
+    "defect_prompts": [
+      {
+        "text": "small mark",
+        "filter": "zipper"
+      },
+      {
+        "text": "irregular mark",
+        "filter": "zipper"
+      }
+    ],
+    "object_prompt": "zipper",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "zipper"
+  }
+]
