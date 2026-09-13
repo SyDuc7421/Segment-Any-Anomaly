@@ -35,33 +35,46 @@ SPLIT_DIRS = {
 SYSTEM = """You write text prompts for an open-vocabulary object detector \
 (Grounding DINO) that finds manufacturing defects.
 
-The detector grounds short noun phrases in an image. Phrases naming a visible \
-defect appearance work; abstract quality judgements do not. Prefer two-to-three \
-word phrases naming what the defect looks like, not what caused it.
+The detector grounds noun phrases. A phrase must name something a camera can see \
+on the surface of the object: a hole, a crack, a scratch, a stain, a bent part, a \
+missing piece. Two rules follow from that.
 
-Each prompt you emit costs one detector forward pass per image, so a short list \
-of precise phrases is cheaper than a long list, and a phrase that grounds \
-nothing costs the same as one that works.
+Every phrase needs a noun. "rusty" grounds nothing; "rust spot" does. An \
+adjective alone has no region to attach to.
+
+A phrase must describe appearance, not judgement or cause. "poorly made", \
+"defective", "abnormal", "flawed" name an opinion about the object, and the \
+detector has no way to localize an opinion. "short circuit" and "loose fitting" \
+name a condition that leaves no visible mark.
+
+Each phrase you emit costs the detector one forward pass over the image, about \
+265 ms. Phrases that overlap in meaning cost twice and find the same region \
+once. A category whose defects all look alike needs one phrase; a category with \
+genuinely different failure modes needs more.
 
 Reply with one JSON object and nothing else."""
 
 USER_TEMPLATE = """Industrial anomaly detection, object category: {class_name}
 
-Produce a JSON object with exactly these keys:
+First decide how many distinct defect appearances this category has. Distinct \
+means they look different from each other, not that they have different names.
 
+Then produce a JSON object with exactly these keys:
+
+- "reason": one sentence saying how many defect phrases this category needs and \
+why. Write this first.
+- "defect_prompts": that many objects, at most four, each with "text" (the noun \
+phrase given to the detector) and "filter" (a phrase meaning the object itself; \
+boxes matching it are dropped as background, so normally the same as \
+object_prompt).
 - "object_prompt": the noun the detector uses to find the object itself. Bare \
 noun, no article, no punctuation.
-- "object_number": integer, how many instances of that object appear in one \
-image. Usually 1.
-- "k_mask": integer, how many candidate defect regions to keep per image. Use 5.
-- "defect_area_threshold": float in (0, 1], the largest fraction of the object's \
-area one defect may occupy. Use 0.9.
-- "defect_prompts": a list of 1 to 5 objects, each with "text" (the phrase given \
-to the detector) and "filter" (a phrase meaning the object itself; boxes matching \
-it are dropped as background, so normally the same as object_prompt).
-
-Choose how many defect prompts this category needs. Emit only phrases you expect \
-the detector to ground in a real image of this category.
+- "object_number": how many instances of that object appear in one image, as an \
+integer. Usually one.
+- "k_mask": how many candidate regions to keep per image, as an integer. Leave \
+this at five.
+- "defect_area_threshold": the largest fraction of the object's area one defect \
+may occupy, as a decimal between zero and one. Leave this at 0.9.
 
 Reply with the JSON object only."""
 

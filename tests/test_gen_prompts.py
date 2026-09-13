@@ -147,3 +147,35 @@ def test_dataset_class_names_starts_with_the_texture_classes():
     """Thu tu quyet dinh thu tu sinh prompt, va greedy decoding chi tai lap
     duoc neu thu tu on dinh."""
     assert gp.dataset_class_names('mvtec')[:2] == ['carpet', 'grid']
+
+
+def test_prompt_does_not_prime_a_defect_count():
+    """Ban dau moi class deu ra dung 5 prompt - kich tran.
+
+    Nguyen nhan: USER_TEMPLATE viet "Use 5." cho k_mask ngay TREN cho hoi so
+    prompt, roi dua khoang ket thuc bang 5. Model thay so 5 hai lan lien.
+    """
+    template = gp.USER_TEMPLATE
+    before_count_field = template[:template.index('"defect_prompts"')]
+
+    assert '5' not in before_count_field, 'con so mo so luong prompt'
+    assert 'five' not in before_count_field.lower()
+
+
+def test_reason_field_comes_before_the_prompts():
+    """Model sinh tuan tu, nen bat no viet ly do TRUOC thi ly do moi anh huong
+    duoc len danh sach prompt. Dat sau thi no chi la bien minh cho viec da roi.
+    """
+    template = gp.USER_TEMPLATE
+
+    assert template.index('"reason"') < template.index('"defect_prompts"')
+
+
+def test_prompt_forbids_the_two_failure_modes_seen_in_the_first_run():
+    """Lan sinh dau cho ra 'rusty', 'leaky' (tinh tu tran) va 'poorly made
+    carpet', 'defective grid' (phan xet). Ca hai deu khong neo duoc vao vung anh.
+    """
+    system = gp.SYSTEM.lower()
+
+    assert 'every phrase needs a noun' in system
+    assert 'not judgement' in system or 'name an opinion' in system
