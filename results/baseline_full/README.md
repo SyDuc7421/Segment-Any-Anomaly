@@ -19,12 +19,51 @@
 
 `p_f1` tren MVTec lech -4.3%, coi nhu tai lap duoc.
 
-**VisA cao hon paper 24.6% - chua giai thich duoc.** Pipeline deterministic (seed
-co dinh, khong huan luyen), nen chenh lech khong the do nhieu. Mot dataset thap
-4%, dataset kia cao 25%, nguoc chieu nhau - dau hieu khac biet he thong. Gia
-thuyet chua loai tru: paper dung split VisA khac (`2cls`/`4cls` thay vi `1cls`),
-hoac dung `visa_challenge` thay vi `visa_public`. Can dieu tra truoc khi dua so
-VisA vao luan van.
+**VisA cao hon paper 24.6%.** Pipeline deterministic (seed co dinh, khong huan
+luyen), nen chenh lech khong the do nhieu.
+
+### Dieu tra 2026-09-13: bon gia thuyet bi loai
+
+**Khong phai do split.** `datasets/visa_public.py:9` mac dinh
+`VisA_pytorch/1cls`, dung split chuan. So anh test doi chieu voi ky vong cua
+1cls (10% normal + toan bo 100 anomalous):
+
+| Class | Do duoc | Ky vong |
+|---|---|---|
+| candle, macaroni1, macaroni2, pcb1, pcb2 | 200 | 200 |
+| pcb3, pcb4 | 201 | 200 (lam tron) |
+| capsules | 160 | 160 |
+| cashew, chewinggum, fryum, pipe_fryum | 150 | 150 |
+
+11/12 khop tuyet doi.
+
+**Khong phai do prompt bi sua.** `git log SAA/prompts/visa_parameters.py` chi co
+mot commit: `638746e SAA+`, lan import goc. Fork chua dung toi.
+
+**Khong phai lech he thong.** Chenh lech tap trung o **2/12 class**:
+`chewinggum` 86.12 va `capsules` 59.27, trong khi muoi class kia nam trong
+khoang 8.93 den 52.52. Bo hai class cao nhat: mean con **25.95** so voi 27.07
+cua paper.
+
+**Khong phai rieng mot metric, khong phai do resize.** `r_f1` lech cung huong
+(MVTec thap hon, VisA cao hon). `specify_resolution` (`utils/eval_utils.py:5`)
+resize score va mask giong het nhau cho ca hai dataset.
+
+### Gia thuyet con lai, chua kiem duoc
+
+Prompt trong repo co the **khac** prompt da tao ra bang so trong paper. Paper
+viet o muc 5.1: *"Details about the prompts derived from domain expert knowledge
+are explained in the supplementary material"* - va supplementary khong co trong
+repo. Khong co gi bao dam `visa_parameters.py` da cong bo trung voi thu chay ra
+Table 1.
+
+Doi chieu per-class cung khong lam duoc: paper chi cong bo trung binh moi dataset.
+
+### Cach viet cho luan van
+
+Bao cao so do duoc, neu ro da loai tru split / prompt bi sua / resize / metric,
+va ghi rang chenh lech tap trung o hai class. **Khong tuyen bo "tai lap thanh
+cong tren VisA"**, va cung khong lang tranh con so.
 
 ## Hai cot max-F1-region
 
