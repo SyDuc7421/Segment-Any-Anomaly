@@ -202,8 +202,9 @@ def main():
     parser = argparse.ArgumentParser(description='Sinh prompt spec bang VLM cuc bo')
     parser.add_argument('--dataset', choices=sorted(SPLIT_DIRS), required=True)
     parser.add_argument('--variant', choices=['blind', 'vision'], required=True)
-    parser.add_argument('--data-root', required=True,
-                        help='Thu muc goc dataset; chi train/good duoc doc')
+    parser.add_argument('--data-root', default=None,
+                        help='Thu muc goc dataset; chi train/good duoc doc. '
+                             'Chi can cho --variant vision.')
     parser.add_argument('--out', required=True)
     parser.add_argument('--n-images', type=int, default=3,
                         help='So anh normal gui kem o variant vision')
@@ -216,6 +217,9 @@ def main():
     args = parser.parse_args()
 
     from datasets import dataset_classes
+
+    if args.variant == 'vision' and not args.data_root:
+        raise SystemExit('--variant vision can --data-root de doc anh train/good')
 
     processor, model = build_model(args.model, load_in_4bit=not args.fp16)
     specs = []
