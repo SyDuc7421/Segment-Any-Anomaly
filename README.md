@@ -73,7 +73,7 @@ Mac dinh cua moi tham so moi tai tao dung hanh vi cu, nen baseline giu bit-exact
 
 | | |
 |---|---|
-| Bao cao tong hop | [`docs/report-phase-b.md`](docs/report-phase-b.md) |
+| Bao cao tong hop | [`docs/report.md`](docs/report.md) |
 | Baseline full-run | [`results/baseline_full/`](results/baseline_full/) |
 | Profiling Buoc 1 | [`results/profiling_step1/`](results/profiling_step1/) |
 | Full-run lite2 | [`results/lite2_full/`](results/lite2_full/) |
@@ -90,12 +90,37 @@ Notebook Colab: `demo/Benchmark_SAA.ipynb` (baseline), `demo/Profiling_SAA_Lite.
 - **lite2 tot hon baseline tren VisA.** Gia thuyet: mask tho hon cua MobileSAM
   khop hon voi defect lon, mo ranh gioi. Chua kiem chung.
 
+## Phase A — nguon prompt
+
+Nam nguon prompt, full MVTec, cau hinh lite2:
+
+| Nguon | `p_f1` | Nhanh hon P3 |
+|---|---|---|
+| P0 `"defect."` | 35.54 | **2.62x** |
+| P1 `general_prompts` | 35.80 | 1.28x |
+| P2b LLM, chi biet ten class | 31.16 | 1.26x |
+| P2v LLM + anh normal | 29.32 | 1.70x |
+| P3 prompt thu cong | **37.44** | 1.00x |
+| **chon tot nhat moi class** | **41.06** | — |
+
+**LLM 3B khong thay duoc chuyen gia** o ca hai bien the. Nhung **khong nguon nao
+thong tri**: nam nguon, khong cai nao thang qua 4/15 class, va chon dung nguon
+cho tung class vuot chuyen gia **3.62 diem** ma khong viet prompt moi nao.
+
+Hai phat hien ve ban chat prompt trong ZSAS:
+
+- **Prompt cu the SAI nguy hiem hon prompt mo DUNG.** `pill` mat 52.84 diem khi
+  prompt la `crack`/`missing piece` thay vi mot chu `"defect."`.
+- **Cho model nhin anh binh thuong khien no mo ta tinh binh thuong.** `capsule`
+  sinh ra `500` — lieu luong in tren vo nang — va sap 21.89 diem.
+
+Prompt do LLM sinh **tai lap duoc 100%**: model trong so mo chay cuc bo, greedy
+decoding, khong goi API ngoai.
+
 ## Tiep theo
 
-Phase A — cho LLM sinh prompt thay cho tu dien viet tay theo tung class. Sau
-Phase B thi no khong con chi la chuyen accuracy: DINO chiem 72% va so luot goi
-DINO ty le thuan voi so prompt, nen **giam so prompt la don bay toc do duy nhat
-con lai**.
+Ba cau hoi con mo (VisA cao hon paper, lite2 vuot baseline tren VisA,
+`metal_nut` cho P1 == P3), kiem bit-exact, Phase A tren VisA, va web demo.
 
 ---
 

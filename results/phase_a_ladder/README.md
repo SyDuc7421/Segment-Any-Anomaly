@@ -16,6 +16,7 @@ sinh ra.
 | P0 | `generic` | `"defect."` | 2 |
 | P1 | `general` | 3 general_prompts | 4 |
 | P2b | `llm` | Qwen2.5-VL-3B, chi biet ten class | 4.53 trung binh |
+| P2v | `llm` | Qwen2.5-VL-3B + 2 anh normal 512px | 3.40 trung binh |
 | P3 | `manual` | 3 general + K manual | 5.20 trung binh |
 
 P3 lay tu lan chay Buoc 2 (`results/lite2_full/`), khong chay lai.
@@ -27,6 +28,7 @@ P3 lay tu lan chay Buoc 2 (`results/lite2_full/`), khong chay lai.
 | P0 | 26.39 | 35.54 | 516.8 | 735.2 |
 | P1 | 26.26 | 35.80 | 1050.7 | 1504.7 |
 | P2b | 23.79 | 31.16 | 1204.8 | 1527.5 |
+| P2v | 21.30 | 29.32 | 871.2 | 1131.4 |
 | P3 | 28.24 | **37.44** | 1394.1 | 1926.0 |
 
 ## 1. So luot DINO ty le thuan voi so prompt — xac nhan
@@ -36,6 +38,7 @@ P3 lay tu lan chay Buoc 2 (`results/lite2_full/`), khong chay lai.
 | P0 | 2.00 | 516.7 | **258.4** |
 | P1 | 4.00 | 1050.7 | **262.7** |
 | P2b | 4.53 | 1204.8 | **265.8** |
+| P2v | 3.40 | 871.2 | **256.2** |
 | P3 | 5.20 | 1394.1 | **268.1** |
 
 Ba con so ms/luot xap xi bang nhau tren 15 class. `t_dino` chi phu thuoc SO LUOT
@@ -164,27 +167,95 @@ tu ten class.
 - **0/53 trung khit tung chu voi prompt thu cong** -> khong co dau hieu nho du
   lieu huan luyen
 
+## 5. P2v — cho model nhin anh: te hon nua
+
+```
+P2v  29.32 p_f1     te hon ca P2b (31.16)
+     1.70x nhanh    nhanh nhat trong cac bien the LLM
+```
+
+Model duoc xem hai anh `train/good` moi class, ha xuong 512px. No xin it prompt
+hon (2.4/class so voi 3.5) va lap lai it hon (47% so voi 66%) - nhung diem thap hon.
+
+### Co che: model mo ta CAI DANG CO, con anomaly detection can CAI KHONG NEN CO
+
+Du doan truoc khi chay la `pill` se tang, vi prompt sinh ra la `red spots` va
+`letter F` - hai thu **co that** tren anh vien thuoc. Thuc te **giam**: 11.10 ->
+8.08.
+
+Ly do: chung co that tren **moi** vien thuoc, ke ca vien binh thuong. Detector
+khop khap noi, phan doan thanh vo nghia.
+
+Cung co che do giai thich `capsule`, sap 21.89 diem (31.23 -> 9.34): prompt sinh
+ra la `['500', 'capsule']`. `500` la lieu luong in tren vo nang; `capsule` la
+chinh vat the, bi bo loc nen loai. Class do con **0 prompt dung duoc**.
+
+> Cho model nhin **anh binh thuong** thi no mo ta **tinh binh thuong**, roi phat
+> ra chinh tinh binh thuong do lam prompt defect.
+
+Day la mot cai gia cua viec dieu kien hoa bang thi giac, va no khong hien nhien
+truoc khi do. Blind khong the mac loi nay vi no khong thay gi.
+
+### Nhung P2v thang tuyet doi 2 class
+
+| Class | P2b | P2v | Prompt vision |
+|---|---|---|---|
+| `metal_nut` | 20.97 | **40.77** | `cracked`, `deformed` |
+| `toothbrush` | 9.88 | **11.79** | `cracked bristles`, `stained bristles` |
+
+Ca hai deu cao nhat trong **ca nam nguon**. `metal_nut` voi hai tinh tu tran -
+dung kieu prompt bi che o phan chat luong - vuot ca prompt thu cong cua tac gia.
+
+### Thay doi lon nhat so voi blind
+
+| Class | P2b | P2v | |
+|---|---|---|---|
+| `capsule` | 31.23 | 9.34 | **-21.89** |
+| `metal_nut` | 20.97 | 40.77 | **+19.80** |
+| `zipper` | 28.49 | 20.30 | -8.19 |
+| `transistor` | 16.74 | 9.15 | -7.59 |
+
+Bien thien hai chieu, khong phai kem deu.
+
+## 6. Oracle: nam nguon, khong nguon nao thong tri
+
+```
+Nguon thang o tung class:  P1 4   P0 3   P2b 3   P3 3   P2v 2
+```
+
+Nam nguon, khong nguon nao qua 4/15.
+
+| Chon giua | `p_f1` | Vuot P3 |
+|---|---|---|
+| P3 mot minh (chuyen gia) | 37.44 | — |
+| oracle-3 (P0/P1/P3) | 39.77 | +2.33 |
+| oracle-4 (+P2b) | 40.80 | +3.36 |
+| **oracle-5 (+P2v)** | **41.06** | **+3.62** |
+
+Ca hai bien the LLM **that bai khi dung dai tra** nhung **deu nang tran khi la
+mot lua chon trong tap**. Do la ket qua trung tam cua Phase A.
+
 ## Toan bo bang theo class (`p_f1`)
 
-| Class | P0 | P1 | P2b | P3 | Loai | Thang |
-|---|---|---|---|---|---|---|
-| carpet | 50.22 | 53.12 | **55.39** | 55.36 | texture | P2b |
-| grid | 11.29 | **17.50** | 13.32 | 15.58 | texture | P1 |
-| leather | 62.04 | **70.71** | 69.23 | 70.35 | texture | P1 |
-| tile | **63.69** | 63.49 | 56.79 | 61.73 | texture | P0 |
-| wood | 63.94 | **67.25** | 62.27 | 63.68 | texture | P1 |
-| bottle | 33.52 | **41.84** | 29.27 | 40.34 | object | P1 |
-| cable | 17.65 | 15.91 | 19.35 | **34.20** | object | P3 |
-| capsule | 21.21 | 17.66 | **31.23** | 18.92 | object | P2b |
-| hazelnut | **48.09** | 39.45 | 37.52 | 47.26 | object | P0 |
-| metal_nut | **38.79** | 36.13 | 20.97 | 36.13 | object | P0 |
-| pill | **63.94** | 44.76 | 11.10 | 44.89 | object | P0 |
-| screw | 8.53 | 20.73 | 5.86 | **20.81** | object | P3 |
-| toothbrush | 8.71 | 8.93 | **9.88** | 8.61 | object | P2b |
-| transistor | 17.47 | 18.81 | 16.74 | **20.23** | object | P3 |
-| zipper | 24.04 | 20.70 | **28.49** | 23.49 | object | P2b |
+| Class | P0 | P1 | P2b | P2v | P3 | Loai | Thang |
+|---|---|---|---|---|---|---|---|
+| carpet | 50.22 | 53.12 | **55.39** | 54.89 | 55.36 | texture | P2b |
+| grid | 11.29 | **17.50** | 13.32 | 12.16 | 15.58 | texture | P1 |
+| leather | 62.04 | **70.71** | 69.23 | 69.84 | 70.35 | texture | P1 |
+| tile | **63.69** | 63.49 | 56.79 | 57.17 | 61.73 | texture | P0 |
+| wood | 63.94 | **67.25** | 62.27 | 62.95 | 63.68 | texture | P1 |
+| bottle | 33.52 | **41.84** | 29.27 | 24.79 | 40.34 | object | P1 |
+| cable | 17.65 | 15.91 | 19.35 | 16.94 | **34.20** | object | P3 |
+| capsule | 21.21 | 17.66 | **31.23** | 9.34 | 18.92 | object | P2b |
+| hazelnut | **48.09** | 39.45 | 37.52 | 35.24 | 47.26 | object | P0 |
+| metal_nut | 38.79 | 36.13 | 20.97 | **40.77** | 36.13 | object | P2v |
+| pill | **63.94** | 44.76 | 11.10 | 8.08 | 44.89 | object | P0 |
+| screw | 8.53 | 20.73 | 5.86 | 6.43 | **20.81** | object | P3 |
+| toothbrush | 8.71 | 8.93 | 9.88 | **11.79** | 8.61 | object | P2v |
+| transistor | 17.47 | 18.81 | 16.74 | 9.15 | **20.23** | object | P3 |
+| zipper | 24.04 | 20.70 | **28.49** | 20.30 | 23.49 | object | P2b |
 
-Nguon thang: P0 4 class, P1 4, P2b 4, P3 3. **Khong nguon nao qua 4/15.**
+Nguon thang: P1 4 class, P0 3, P2b 3, P3 3, P2v 2. **Khong nguon nao qua 4/15.**
 
 P1 thang P3 tren 6/15 class: `grid`, `leather`, `tile`, `wood`, `bottle`,
 `toothbrush` — bon trong so do la texture.
@@ -216,8 +287,8 @@ va bi thua boi mot chien luoc khong can chuyen gia nao viet.
 | | Khung cu | Khung moi |
 |---|---|---|
 | Cau hoi | LLM thu hep khoang cach toi oracle? | LLM chon dung chien luoc prompt cho tung class? |
-| Du dia | +1.64 diem (P1 -> P3) | **+3.36 diem tren ca P3** (oracle-4) |
-| Tran | P3 | Chua biet — 40.80 chi la san |
+| Du dia | +1.64 diem (P1 -> P3) | **+3.62 diem tren ca P3** (oracle-5) |
+| Tran | P3 | Chua biet — 41.06 chi la san |
 
 40.80 moi chi la chon giua bon thu co san, va mot trong bon la LLM 3B blind
 vua that bai khi dung dai tra. Nguon tot hon se nang tran nay len tiep.
@@ -231,6 +302,6 @@ Phat bieu cho luan van:
 
 ## Du lieu tho
 
-CSV tung muc tren Google Drive: `SAA_results/phase_a_{P0,P1,P2b}/csv/mvtec-indx-0.csv`.
-Prompt do LLM sinh: `SAA/prompts/generated/mvtec-blind.json` (+ `-meta.json`).
+CSV tung muc tren Google Drive: `SAA_results/phase_a_{P0,P1,P2b,P2v}/csv/mvtec-indx-0.csv`.
+Prompt do LLM sinh: `SAA/prompts/generated/mvtec-{blind,vision}.json` (+ `-meta.json`).
 P3 o `results/lite2_full/mvtec-indx-0.csv`.

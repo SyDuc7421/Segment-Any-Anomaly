@@ -51,7 +51,7 @@ Accuracy dat. Toc do khong. Phuong an du phong da chot truoc khi chay (spec muc
 7): xuat bang Pareto va ket luan "SAA+ nen duoc toi dau truoc khi gay".
 
 Luu y ve dong `r_f1`: tut 5.36 diem tren MVTec la sat nguong 5 diem, nhung cot
-do la ban cai dat co loi (xem `docs/report-phase-b.md` muc 4). `r_f1_fixed` chi
+do la ban cai dat co loi (xem `docs/report.md` muc 4). `r_f1_fixed` chi
 tut 0.67 diem. Neu xet theo cai dat dung dinh nghia thi tieu chi nay dat thoai mai.
 
 ## Ba dinh chinh cho ket luan Buoc 1

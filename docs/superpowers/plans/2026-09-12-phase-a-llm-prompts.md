@@ -20,7 +20,7 @@ chay cuc bo tren Colab, pytest. **Khong goi API ngoai.**
 
 **Spec:** `docs/superpowers/specs/2026-08-28-saa-lite-llm-prompt-design.md` muc 5
 
-**Bao cao Phase B:** `docs/report-phase-b.md` — doc muc 6b truoc, vi ket qua Phase
+**Bao cao Phase B:** `docs/report.md` — doc muc 6b truoc, vi ket qua Phase
 B doi ban chat cua Phase A.
 
 ## Ba dieu thang so sanh da do, va chung doi khung Phase A
