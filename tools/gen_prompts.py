@@ -202,14 +202,22 @@ def build_model(model_id, load_in_4bit=True):
     return processor, model
 
 
-def generate_one(processor, model, class_name, image_paths, max_new_tokens=512, retries=3):
+def generate_one(processor, model, class_name, image_paths, max_new_tokens=512,
+                 retries=3, max_image_side=512):
     """Sinh spec cho mot class, thu lai neu JSON hong.
 
     Greedy o moi lan, ke ca lan thu lai - nen chuoi thu lai cung tai lap duoc.
     """
     from PIL import Image
 
-    images = [Image.open(p).convert('RGB') for p in image_paths]
+    images = []
+    for p in image_paths:
+        img = Image.open(p).convert('RGB')
+        # Anh MVTec la 1024x1024; Qwen chia thanh hang nghin visual token moi
+        # anh, va vision tower OOM tren T4 voi ba anh nhu the. Model chi can
+        # thay vat the trong nhu the nao, khong can chi tiet pixel.
+        img.thumbnail((max_image_side, max_image_side), Image.LANCZOS)
+        images.append(img)
     messages = build_messages(class_name, len(images))
     last_error = None
     last_output = ''
@@ -253,6 +261,10 @@ def main():
     parser.add_argument('--out', required=True)
     parser.add_argument('--n-images', type=int, default=3,
                         help='So anh normal gui kem o variant vision')
+    parser.add_argument('--max-image-side', type=int, default=512,
+                        help='Ha canh dai nhat cua anh xuong con so nay truoc khi '
+                             'dua vao model. Anh MVTec 1024px lam vision tower OOM '
+                             'tren T4 voi ba anh.')
     parser.add_argument('--model', default=DEFAULT_MODEL_ID,
                         help=f'Model VLM. Ban 3B ({FALLBACK_MODEL_ID}) chay fp16 '
                              f'lot T4 nen khong can bitsandbytes.')
@@ -284,7 +296,8 @@ def main():
                     f'variant vision can anh, dung im lang bo qua'
                 )
 
-        spec = generate_one(processor, model, class_name, image_paths)
+        spec = generate_one(processor, model, class_name, image_paths,
+                            max_image_side=args.max_image_side)
         print(f"{class_name}: {len(spec['defect_prompts'])} prompt  "
               f"{[p['text'] for p in spec['defect_prompts']]}")
         specs.append(spec)
@@ -299,6 +312,7 @@ def main():
         'variant': args.variant,
         'dataset': args.dataset,
         'n_images': args.n_images if args.variant == 'vision' else 0,
+        'max_image_side': args.max_image_side if args.variant == 'vision' else None,
         'decoding': 'greedy (do_sample=False)',
         'quantization': 'fp16' if args.fp16 else '4-bit nf4',
         'system_prompt': SYSTEM,
