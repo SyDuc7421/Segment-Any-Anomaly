@@ -101,9 +101,21 @@ Gia thuyet chua loai tru:
 - Paper dung `visa_challenge` thay vi `visa_public`
 - So anh test moi class khong khop voi bang trong paper
 
-Cho toi khi tra loi duoc, **so VisA khong dua vao luan van nhu ket qua tai lap**.
-"Ket qua cua em tot hon paper" khong phai cau tra loi duoc chap nhan neu khong
-giai thich duoc tai sao.
+Dieu tra ngay 2026-09-13 da **loai bon gia thuyet**: khong phai do split (so anh
+khop chinh xac `1cls`, 11/12 class tuyet doi), khong phai do prompt bi sua (mot
+commit duy nhat, la lan import goc), khong phai do resize, va khong rieng mot
+metric (`r_f1` lech cung huong).
+
+Chenh lech **tap trung o 2/12 class**: `chewinggum` 86.12 va `capsules` 59.27.
+Bo hai class do ra thi mean con 25.95, sat 27.07 cua paper. Day khong phai lech
+he thong.
+
+Gia thuyet con lai chua kiem duoc: prompt trong repo co the khac prompt da tao ra
+Table 1. Paper day chi tiet prompt sang supplementary material, va supplementary
+khong co trong repo.
+
+**Khong tuyen bo "tai lap thanh cong tren VisA"**, nhung cung khong lang tranh
+con so. Chi tiet o `results/baseline_full/README.md`.
 
 ---
 
