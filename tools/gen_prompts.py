@@ -20,7 +20,11 @@ import json
 import os
 import re
 
-MODEL_ID = 'Qwen/Qwen2.5-VL-7B-Instruct'
+DEFAULT_MODEL_ID = 'Qwen/Qwen2.5-VL-7B-Instruct'
+
+# Ban 3B chay fp16 lot T4 (~6 GB) nen KHONG can bitsandbytes. Dung khi 4-bit
+# hong, hoac khi muon bo hoan toan mot dependency khoi duong tai lap.
+FALLBACK_MODEL_ID = 'Qwen/Qwen2.5-VL-3B-Instruct'
 
 SPLIT_DIRS = {
     # Chi train/good. Cay thu muc cua ca hai dataset deu theo dang nay.
@@ -130,20 +134,25 @@ def parse_spec(text, class_name):
     return spec
 
 
-def build_model(load_in_4bit=True):
+def build_model(model_id, load_in_4bit=True):
     """Nap VLM. Lop Auto* tu tra ra lop dung tu config, khong phai doan ten."""
     import torch
-    from transformers import AutoModelForImageTextToText, AutoProcessor, BitsAndBytesConfig
+    from transformers import AutoModelForImageTextToText, AutoProcessor
 
     kwargs = {'device_map': 'auto'}
+
     if load_in_4bit:
         # 7B fp16 la ~15 GB, sat tran 16 GB cua T4. 4-bit xuong ~5 GB.
+        from transformers import BitsAndBytesConfig
+
         kwargs['quantization_config'] = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16
         )
+    else:
+        kwargs['dtype'] = torch.float16
 
-    processor = AutoProcessor.from_pretrained(MODEL_ID)
-    model = AutoModelForImageTextToText.from_pretrained(MODEL_ID, **kwargs)
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = AutoModelForImageTextToText.from_pretrained(model_id, **kwargs)
     model.eval()
     return processor, model
 
@@ -198,13 +207,17 @@ def main():
     parser.add_argument('--out', required=True)
     parser.add_argument('--n-images', type=int, default=3,
                         help='So anh normal gui kem o variant vision')
+    parser.add_argument('--model', default=DEFAULT_MODEL_ID,
+                        help=f'Model VLM. Ban 3B ({FALLBACK_MODEL_ID}) chay fp16 '
+                             f'lot T4 nen khong can bitsandbytes.')
     parser.add_argument('--fp16', action='store_true',
-                        help='Nap fp16 thay vi 4-bit; can >16 GB VRAM')
+                        help='Nap fp16 thay vi 4-bit. Bat buoc khi khong co '
+                             'bitsandbytes; can ~15 GB VRAM cho ban 7B, ~6 GB cho 3B.')
     args = parser.parse_args()
 
     from datasets import dataset_classes
 
-    processor, model = build_model(load_in_4bit=not args.fp16)
+    processor, model = build_model(args.model, load_in_4bit=not args.fp16)
     specs = []
 
     for class_name in dataset_classes[args.dataset]:
@@ -230,7 +243,7 @@ def main():
 
     # Provenance canh file JSON: hoi dong tai sinh duoc chinh xac file nay.
     meta = {
-        'model_id': MODEL_ID,
+        'model_id': args.model,
         'variant': args.variant,
         'dataset': args.dataset,
         'n_images': args.n_images if args.variant == 'vision' else 0,
