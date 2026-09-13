@@ -1,0 +1,364 @@
+[
+  {
+    "reason": "This category requires multiple distinct defect appearances because carpets can have various types of defects such as holes, stains, and missing pieces.",
+    "defect_prompts": [
+      {
+        "text": "rusty",
+        "filter": "carpet"
+      },
+      {
+        "text": "stain",
+        "filter": "carpet"
+      },
+      {
+        "text": "missing piece",
+        "filter": "carpet"
+      }
+    ],
+    "object_prompt": "carpet",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "carpet"
+  },
+  {
+    "reason": "This category requires multiple distinct defect appearances because the defects can vary in size, shape, and location.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "grid"
+      },
+      {
+        "text": "stain",
+        "filter": "grid"
+      },
+      {
+        "text": "missing piece",
+        "filter": "grid"
+      },
+      {
+        "text": "bent part",
+        "filter": "grid"
+      }
+    ],
+    "object_prompt": "grid",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "grid"
+  },
+  {
+    "reason": "Leather products can have various defects such as holes, cracks, scratches, stains, and bent parts. These defects are visually distinct and require specific phrases to ground.",
+    "defect_prompts": [
+      {
+        "text": "hole",
+        "filter": "leather"
+      },
+      {
+        "text": "crack",
+        "filter": "leather"
+      },
+      {
+        "text": "scratch",
+        "filter": "leather"
+      },
+      {
+        "text": "stain",
+        "filter": "leather"
+      }
+    ],
+    "object_prompt": "leather",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "leather"
+  },
+  {
+    "reason": "Tile categories typically have multiple distinct defects that affect their appearance. These include cracks, stains, missing pieces, and misalignment.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "tile"
+      },
+      {
+        "text": "stain",
+        "filter": "tile"
+      },
+      {
+        "text": "missing piece",
+        "filter": "tile"
+      },
+      {
+        "text": "misaligned",
+        "filter": "tile"
+      }
+    ],
+    "object_prompt": "tile",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "tile"
+  },
+  {
+    "reason": "Wood categories often have multiple distinct defects that require specific phrases to detect.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "wood"
+      },
+      {
+        "text": "stain",
+        "filter": "wood"
+      },
+      {
+        "text": "bent part",
+        "filter": "wood"
+      },
+      {
+        "text": "missing piece",
+        "filter": "wood"
+      }
+    ],
+    "object_prompt": "wood",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "wood"
+  },
+  {
+    "reason": "This category requires multiple distinct defect appearances because bottles can have various types of defects such as scratches, stains, and cracks.",
+    "defect_prompts": [
+      {
+        "text": "scratch",
+        "filter": "bottle"
+      },
+      {
+        "text": "stain",
+        "filter": "bottle"
+      },
+      {
+        "text": "crack",
+        "filter": "bottle"
+      }
+    ],
+    "object_prompt": "bottle",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "bottle"
+  },
+  {
+    "reason": "Cable anomalies can vary widely depending on the type of cable and the specific defect being detected. For example, a cable might have a broken wire, a frayed end, or a missing connector. Each of these defects is visually distinct and requires its own unique phrase.",
+    "defect_prompts": [
+      {
+        "text": "broken wire",
+        "filter": "cable"
+      },
+      {
+        "text": "frayed end",
+        "filter": "cable"
+      },
+      {
+        "text": "missing connector",
+        "filter": "cable"
+      }
+    ],
+    "object_prompt": "cable",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "cable"
+  },
+  {
+    "reason": "Capsule categories typically have multiple distinct defects that require specific noun phrases to detect.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "capsule"
+      },
+      {
+        "text": "stain",
+        "filter": "capsule"
+      },
+      {
+        "text": "missing piece",
+        "filter": "capsule"
+      },
+      {
+        "text": "bent part",
+        "filter": "capsule"
+      }
+    ],
+    "object_prompt": "capsule",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "capsule"
+  },
+  {
+    "reason": "Hazelnuts can have various defects such as cracks, stains, and missing pieces.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "hazelnut"
+      },
+      {
+        "text": "stain",
+        "filter": "hazelnut"
+      },
+      {
+        "text": "missing piece",
+        "filter": "hazelnut"
+      }
+    ],
+    "object_prompt": "hazelnut",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "hazelnut"
+  },
+  {
+    "reason": "Metal nuts can have various defects such as rust spots, scratches, and missing pieces.",
+    "defect_prompts": [
+      {
+        "text": "rusty",
+        "filter": "metal nut"
+      },
+      {
+        "text": "scratch",
+        "filter": "metal nut"
+      },
+      {
+        "text": "missing piece",
+        "filter": "metal nut"
+      }
+    ],
+    "object_prompt": "nut",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "metal_nut"
+  },
+  {
+    "reason": "This category requires multiple distinct defect appearances because pills can have various types of defects such as cracks, scratches, stains, or missing pieces.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "pill"
+      },
+      {
+        "text": "scratch",
+        "filter": "pill"
+      },
+      {
+        "text": "stain",
+        "filter": "pill"
+      },
+      {
+        "text": "missing piece",
+        "filter": "pill"
+      }
+    ],
+    "object_prompt": "pill",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "pill"
+  },
+  {
+    "reason": "Screw defects typically include a hole where the screw head is missing, a crack along the length of the screw, a scratch on the surface, or a stain indicating rust or oxidation.",
+    "defect_prompts": [
+      {
+        "text": "missing screw head",
+        "filter": "screw"
+      },
+      {
+        "text": "cracked screw",
+        "filter": "screw"
+      },
+      {
+        "text": "scratched screw",
+        "filter": "screw"
+      },
+      {
+        "text": "stained screw",
+        "filter": "screw"
+      }
+    ],
+    "object_prompt": "screw",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "screw"
+  },
+  {
+    "reason": "To detect manufacturing defects in toothbrushes, we need to identify specific visual indicators that differentiate between various types of defects. These include holes, cracks, scratches, stains, bent parts, and missing pieces.",
+    "defect_prompts": [
+      {
+        "text": "hole",
+        "filter": "toothbrush"
+      },
+      {
+        "text": "crack",
+        "filter": "toothbrush"
+      },
+      {
+        "text": "scratch",
+        "filter": "toothbrush"
+      },
+      {
+        "text": "stain",
+        "filter": "toothbrush"
+      }
+    ],
+    "object_prompt": "toothbrush",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "toothbrush"
+  },
+  {
+    "reason": "This category requires multiple distinct defect appearances because transistors can have various types of defects such as cracks, scratches, and missing pieces.",
+    "defect_prompts": [
+      {
+        "text": "crack",
+        "filter": "transistor"
+      },
+      {
+        "text": "scratch",
+        "filter": "transistor"
+      },
+      {
+        "text": "missing piece",
+        "filter": "transistor"
+      }
+    ],
+    "object_prompt": "transistor",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "transistor"
+  },
+  {
+    "reason": "Zipper defects typically include issues like misalignment, broken teeth, or fraying. These defects are visually distinct enough to require multiple phrases.",
+    "defect_prompts": [
+      {
+        "text": "misaligned teeth",
+        "filter": "zipper"
+      },
+      {
+        "text": "broken teeth",
+        "filter": "zipper"
+      },
+      {
+        "text": "frayed edge",
+        "filter": "zipper"
+      }
+    ],
+    "object_prompt": "zipper",
+    "object_number": 1,
+    "k_mask": 5,
+    "defect_area_threshold": 0.9,
+    "class": "zipper"
+  }
+]
