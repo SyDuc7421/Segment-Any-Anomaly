@@ -2,7 +2,8 @@
 
 - **Ngay**: 2026-09-12
 - **Trang thai**: Buoc 0, Buoc 1, Buoc 2 hoan thanh. Phase A: thang so sanh
-  nguon prompt da chay (`results/phase_a_ladder/`), phan sinh prompt chua bat dau.
+  P0/P1/P2b/P3 da chay tren full MVTec (`results/phase_a_ladder/`). Con lai
+  P2-vision va toan bo VisA cua Phase A.
 - **Phan cung**: Colab T4 (16 GB)
 - **Spec**: `docs/superpowers/specs/2026-08-28-saa-lite-llm-prompt-design.md`
 
@@ -31,9 +32,13 @@ spec muc 7, nhung da vat 90% du dia ly thuyet cua truc SAM.
 hai vua kem chinh xac hon (con 4-16%) vua cham hon. Khong co diem Pareto.
 
 **6. Prompt thu cong cua tac gia thua chien luoc generic tren 6/15 class**, va
-lam hai co he thong tren class texture. Chon dung nguon prompt cho tung class
-vuot chuyen gia 2.33 diem `p_f1` ma khong can viet prompt moi nao. Chi tiet o
-`results/phase_a_ladder/README.md`.
+lam hai co he thong tren class texture (-1.07 diem), trong khi giup tren object
+(+3.00 diem).
+
+**7. LLM 3B chi biet ten class that bai khi dung dai tra** (31.16 `p_f1`, thua
+ca ba muc con lai) **nhung nang tran khi la mot lua chon trong tap**: chon dung
+nguon cho tung class cho 40.80, vuot chuyen gia 3.36 diem. Khong nguon nao thang
+qua 4/15 class. Chi tiet o `results/phase_a_ladder/README.md`.
 
 Ket luan chien luoc: sau khi thay SAM, **Grounding DINO chiem 69-72% thoi gian
 va khong thay the duoc**. Giam so luot goi DINO — tuc Phase A — la don bay toc
@@ -365,6 +370,10 @@ Full test set:
   15 class va ba muc prompt khac nhau
 - Prompt thu cong khong phai tran: thua generic tren 6/15 class, lam hai tren
   texture (-1.07 diem), giup tren object (+3.00 diem)
+- LLM 3B blind that bai khi dung dai tra (31.16 so voi 37.44 cua P3), nhung
+  thang 4/15 class va nang tran oracle len 40.80
+- Prompt cu the SAI nguy hiem hon prompt mo DUNG: `pill` mat 52.84 diem khi
+  prompt sinh ra la 'crack'/'scratch'/'missing piece' thay vi 'defect.'
 
 ### Con mo
 
@@ -390,9 +399,10 @@ DINO chiem 72% tren MVTec (90% neu chi nhin `carpet`) va khong thay the duoc.
 Giam so prompt keo `t_total` xuong dung nhu du doan. P0 dat 2.62x so voi P3 tren
 15 class (va 3.14x tren rieng `carpet` o lat cat dau).
 
-Nhung phat hien lon hon la **khong nguon prompt nao thong tri**: P0 thang 6
-class, P1 thang 5, P3 thang 4. Chon dung nguon cho tung class cho 39.77 `p_f1`,
-vuot P3 (37.44) 2.33 diem — ma khong viet mot prompt moi nao.
+Nhung phat hien lon hon la **khong nguon prompt nao thong tri**. Voi bon nguon
+(them P2b do LLM sinh): P0 thang 4 class, P1 4, P2b 4, P3 3 — khong nguon nao qua
+4/15. Chon dung nguon cho tung class cho 40.80 `p_f1`, vuot P3 (37.44) **3.36
+diem**.
 
 Phase A vi vay doi khung: cau hoi khong con la "LLM thu hep duoc bao nhieu
 khoang cach toi oracle" (P3 khong phai oracle), ma la "LLM chon duoc chien luoc
